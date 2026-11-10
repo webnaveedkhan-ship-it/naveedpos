@@ -1,0 +1,15 @@
+{
+  "name": "naveedpos-monorepo",
+  "version": "1.0.0",
+  "description": "NaveedPOS - Production-Ready Point of Sale System",
+  "scripts": {
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "start": "node server/src/server.js",
+    "seed": "npm --prefix server run seed",
+    "build:client": "npm --prefix client run build"
+  },
+  "keywords": ["pos", "point-of-sale", "mern", "express", "react", "tailwind"],
+  "author": "NaveedPOS",
+  "license": "ISC"
+}
