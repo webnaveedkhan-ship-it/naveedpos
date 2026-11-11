@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "NaveedPOS - Production-Ready Point of Sale System",
   "scripts": {
-    "build": "node scripts/build.js",
-    "vercel-build": "node scripts/build.js",
-    "server": "npm --prefix server run dev",
+    "build": "cd client && npm install && npm run build",
+    "vercel-build": "cd client && npm install && npm run build",
     "client": "npm --prefix client run dev",
+    "server": "npm --prefix server run dev",
     "start": "node server/src/server.js",
-    "seed": "npm --prefix server run seed",
-    "build:client": "npm --prefix client run build"
+    "seed": "npm --prefix server run seed"
   },
   "keywords": ["pos", "point-of-sale", "mern", "express", "react", "tailwind"],
   "author": "NaveedPOS",
