@@ -16,7 +16,7 @@ async function seedSuperAdmin() {
   console.log('🛡️  NaveedPOS SaaS: Safe Super Admin CLI Provisioner');
   console.log('======================================================\n');
 
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/naveedpos';
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/naveedpos';
 
   try {
     console.log(`📡 Connecting to MongoDB at: ${mongoUri.replace(/:([^:@]{4})[^:@]*@/, ':$1***@')}...`);

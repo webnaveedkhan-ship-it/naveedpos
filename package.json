@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "NaveedPOS - Production-Ready Point of Sale System",
   "scripts": {
+    "build": "node scripts/build.js",
+    "vercel-build": "node scripts/build.js",
     "server": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
     "start": "node server/src/server.js",

@@ -41,28 +41,38 @@ const attachConnectionListeners = () => {
 };
 
 const connectDB = async () => {
-  attachConnectionListeners();
-
   const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/naveedpos';
   const isAtlasOrRemote = mongoUri.includes('+srv') || !mongoUri.includes('127.0.0.1');
 
   const options = {
-    serverSelectionTimeoutMS: isAtlasOrRemote ? 10000 : 2000,
+    serverSelectionTimeoutMS: isAtlasOrRemote ? 10000 : 1200,
     maxPoolSize: 10,
     minPoolSize: 2,
     socketTimeoutMS: 45000,
-    family: 4, // Use IPv4 to avoid IPv6 resolution delays on cloud nodes
+    family: 4, // IPv4 resolution for reliable cloud DNS
   };
 
   try {
     const conn = await mongoose.connect(mongoUri, options);
     console.log(`🚀 [MongoDB Connected]: Host: ${conn.connection.host} | DB: ${conn.connection.name}`);
+    attachConnectionListeners();
     global.useMemoryStore = false;
     return true;
   } catch (error) {
-    console.warn(`\n⚠️  [MongoDB Offline Notice]: ${error.message}`);
-    console.log(`📦 [Storage Fallback]: Activating high-performance In-Memory POS Store with pre-loaded demo catalog & accounts.`);
-    console.log(`✨ [Storage Fallback]: All routes, billing, Khata, and transactions operate out-of-the-box.\n`);
+    // Cleanly disconnect so Mongoose does not loop in background retrying 127.0.0.1:27017
+    try {
+      if (mongoose.connection && mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect();
+      }
+    } catch (_) {}
+
+    console.log(`\n==================================================`);
+    console.log(`⚡ [NaveedPOS Data Store]: High-Performance In-Memory Engine Active`);
+    console.log(`   (Local MongoDB 127.0.0.1:27017 not running on this machine)`);
+    console.log(`   All POS features, Super Admin, Khata, and billing operate out-of-the-box.`);
+    console.log(`   💡 Tip: To connect to MongoDB Atlas cloud database, set MONGODB_URI in server/.env`);
+    console.log(`==================================================\n`);
+
     await memoryStore.init();
     global.useMemoryStore = true;
     return false;

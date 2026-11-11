@@ -141,6 +141,11 @@ if (require.main === module) {
   process.on('unhandledRejection', (err) => {
     console.error(`Unhandled Rejection Error: ${err.message}`);
   });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (err) => {
+    console.error(`Uncaught Exception Error:`, err);
+  });
 }
 
 module.exports = app;
