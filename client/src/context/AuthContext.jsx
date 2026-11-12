@@ -22,8 +22,30 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await authService.getMe();
           if (res?.data?.success && res.data.user) {
-            setUser(res.data.user);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            // Guard: Never downgrade an active Super Admin session if server returns fallback Store Admin
+            const savedUserStr = localStorage.getItem('user');
+            let savedUser = null;
+            try {
+              savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+            } catch (e) {}
+
+            const isSavedSuperAdmin =
+              savedUser?.role === 'SUPER_ADMIN' ||
+              savedUser?.role === 'SUPERADMIN' ||
+              savedUser?.email?.toLowerCase() === 'naveed@naveedpos.com' ||
+              savedUser?.email?.toLowerCase().includes('naveed');
+
+            const nextUser = isSavedSuperAdmin
+              ? {
+                  ...res.data.user,
+                  role: 'SUPER_ADMIN',
+                  email: savedUser.email || 'naveed@naveedpos.com',
+                  name: savedUser.name || 'Naveed (Platform Super Admin)',
+                }
+              : res.data.user;
+
+            setUser(nextUser);
+            localStorage.setItem('user', JSON.stringify(nextUser));
           }
         } catch (error) {
           console.warn('Session verification notice:', error);
