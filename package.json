@@ -1,12 +1,13 @@
 {
   "name": "naveedpos-monorepo",
   "version": "1.0.0",
+  "private": true,
   "description": "NaveedPOS - Production-Ready Point of Sale System",
   "scripts": {
-    "build": "npm --prefix client run build",
     "install:client": "npm --prefix client install",
-    "build:client": "cd client && npm run build",
-    "vercel-build": "cd client && npm install && npm run build",
+    "build": "npm --prefix client install && npm --prefix client run build",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
     "client": "npm --prefix client run dev",
     "server": "npm --prefix server run dev",
     "start": "node server/src/server.js",
