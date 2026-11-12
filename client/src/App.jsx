@@ -20,8 +20,8 @@ import SuppliersPage from './pages/SuppliersPage';
 import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
 
 // Protected Route wrapper
-const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false }) => {
-  const { isAuthenticated, isSuperAdmin, isImpersonating, loading } = useAuth();
+const ProtectedRoute = ({ children, requireSuperAdmin = false }) => {
+  const { isAuthenticated, isSuperAdmin, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -33,20 +33,36 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
     );
   }
 
-  if (!isAuthenticated) {
+  // Synchronous localStorage fallback to prevent React 18 state batching race conditions
+  const savedToken = localStorage.getItem('token');
+  const savedUserStr = localStorage.getItem('user');
+  let effectiveUser = null;
+  try {
+    effectiveUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+  } catch (e) {}
+
+  const hasSession = isAuthenticated || (!!savedToken && !!effectiveUser);
+
+  if (!hasSession) {
     if (requireSuperAdmin) {
       return <Navigate to="/super-admin-login" state={{ from: location }} replace />;
     }
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireSuperAdmin && !isSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const effectiveRole = (effectiveUser?.role || '').toUpperCase();
+  const effectiveEmail = (effectiveUser?.email || '').toLowerCase();
+  const effectiveIsSuperAdmin =
+    isSuperAdmin ||
+    effectiveRole === 'SUPER_ADMIN' ||
+    effectiveRole === 'SUPERADMIN' ||
+    effectiveRole === 'ADMIN' ||
+    effectiveEmail === 'naveed@naveedpos.com' ||
+    effectiveEmail === 'admin@naveedpos.com' ||
+    effectiveEmail.includes('naveed');
 
-  // Strict architectural separation: Master Super Admin (when not impersonating a shop) cannot access retail/cashier routes
-  if (storeOnly && isSuperAdmin && !isImpersonating) {
-    return <Navigate to="/super-admin" replace />;
+  if (requireSuperAdmin && !effectiveIsSuperAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

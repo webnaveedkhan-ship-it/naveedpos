@@ -19,10 +19,11 @@ import {
   Activity,
   ShieldAlert,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
+  const location = useLocation();
   const { user, logout, isAdmin, isSuperAdmin, tenantName, isImpersonating, exitImpersonation } =
     useAuth();
 
@@ -242,8 +243,33 @@ const Navbar = ({ onToggleSidebar, isSidebarOpen }) => {
             )}
           </div>
 
-          {/* Right: Theme Toggle & User badge & Logout */}
+          {/* Right: Console Switcher, Theme Toggle & User badge & Logout */}
           <div className="flex items-center space-x-2.5">
+            {/* Quick Switcher for Super Admin / Owner */}
+            {isSuperAdmin && (
+              <Link
+                to={location.pathname.startsWith('/super-admin') ? '/dashboard' : '/super-admin'}
+                className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition-all flex items-center space-x-1.5 shadow-sm ${
+                  location.pathname.startsWith('/super-admin')
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white border-indigo-500 shadow-indigo-500/20'
+                }`}
+                title="Switch Console View"
+              >
+                {location.pathname.startsWith('/super-admin') ? (
+                  <>
+                    <Store className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Store POS</span>
+                  </>
+                ) : (
+                  <>
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Super Admin Console</span>
+                  </>
+                )}
+              </Link>
+            )}
+
             {/* Universal Theme Toggle */}
             <ThemeToggle />
 

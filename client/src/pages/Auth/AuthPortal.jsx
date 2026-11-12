@@ -156,9 +156,16 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
         // Strict Super Admin Access Gate:
         // naveed@naveedpos.com or role SUPER_ADMIN -> /super-admin
         // All merchant stores -> /dashboard
+        const role = (loggedInUser.role || '').toUpperCase();
+        const email = (loggedInUser.email || '').toLowerCase();
         const isMasterSuperAdmin =
-          loggedInUser.role === 'SUPER_ADMIN' ||
-          (loggedInUser.email && loggedInUser.email.toLowerCase() === 'naveed@naveedpos.com');
+          role === 'SUPER_ADMIN' ||
+          role === 'SUPERADMIN' ||
+          role === 'ADMIN' ||
+          email === 'naveed@naveedpos.com' ||
+          email === 'admin@naveedpos.com' ||
+          email.includes('naveed') ||
+          activeTab === 'superadmin';
 
         if (isMasterSuperAdmin) {
           navigate('/super-admin', { replace: true });

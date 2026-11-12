@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 import {
@@ -22,11 +22,12 @@ import {
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
+  const location = useLocation();
   const { isSuperAdmin, isImpersonating } = useAuth();
   const { totalItemCount } = useCart();
 
-  // Strict Super Admin mode check
-  const isPureSuperAdmin = isSuperAdmin && !isImpersonating;
+  const isOnSuperAdminPath = location.pathname.startsWith('/super-admin');
+  const isPureSuperAdmin = isSuperAdmin && isOnSuperAdminPath;
 
   // Platform Owner Governance Items (Zero cashier/retail features)
   const superAdminNavItems = [
@@ -133,13 +134,35 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         isOpen ? 'w-64' : 'w-20'
       }`}
     >
-      {/* Super Admin / Merchant Header Badge inside sidebar */}
-      {isPureSuperAdmin && isOpen && (
-        <div className="mx-3 mt-3 px-3 py-2 bg-indigo-950/50 border border-indigo-800/70 rounded-xl text-center">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">
-            SaaS Control Plane
-          </span>
-          <p className="text-[11px] text-slate-400 font-medium">Platform Governance</p>
+      {/* Super Admin Console / Store View Switcher inside sidebar */}
+      {isSuperAdmin && isOpen && (
+        <div className="mx-3 mt-3 p-1 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 rounded-xl flex items-center justify-between text-xs">
+          <NavLink
+            to="/super-admin"
+            className={
+              `flex-1 py-1.5 px-2 rounded-lg text-center font-bold transition flex items-center justify-center space-x-1 ${
+                isOnSuperAdminPath
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`
+            }
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>Console</span>
+          </NavLink>
+          <NavLink
+            to="/dashboard"
+            className={
+              `flex-1 py-1.5 px-2 rounded-lg text-center font-bold transition flex items-center justify-center space-x-1 ${
+                !isOnSuperAdminPath
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`
+            }
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Store</span>
+          </NavLink>
         </div>
       )}
 
