@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import Modal from '../../components/common/Modal';
@@ -25,6 +25,7 @@ import {
   Building2,
   CreditCard,
   Activity,
+  ArrowLeft,
 } from 'lucide-react';
 
 // Pakistani Phone Formatter (03XX-XXXXXXX)
@@ -43,23 +44,32 @@ const validateEmail = (val) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 };
 
-const AuthPortal = ({ defaultTab = 'login' }) => {
+const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, registerTrial } = useAuth();
 
-  // Active tab state: 'login' | 'superadmin' | 'signup'
+  // Determine if this is the private Super Admin portal
+  const isSuperAdminPath =
+    isPrivateAdminRoute ||
+    location.pathname === '/super-admin-login' ||
+    location.pathname === '/superadmin' ||
+    location.pathname === '/admin-portal' ||
+    defaultTab === 'superadmin';
+
+  // Active tab state: 'superadmin' | 'login' | 'signup'
   const isSignUpRoute = location.pathname === '/signup' || defaultTab === 'signup';
-  const isSuperAdminRoute = location.pathname === '/super-admin-login' || defaultTab === 'superadmin';
   const [activeTab, setActiveTab] = useState(
-    isSignUpRoute ? 'signup' : isSuperAdminRoute ? 'superadmin' : 'login'
+    isSuperAdminPath ? 'superadmin' : isSignUpRoute ? 'signup' : 'login'
   );
 
   // Form Fields State
   const [identifier, setIdentifier] = useState(
-    isSuperAdminRoute ? 'naveed@naveedpos.com' : 'admin@naveedpos.com'
+    isSuperAdminPath ? 'naveed@naveedpos.com' : 'admin@naveedpos.com'
   );
-  const [password, setPassword] = useState('admin123');
+  const [password, setPassword] = useState(
+    isSuperAdminPath ? 'Naveed@POS2026!' : 'admin123'
+  );
   const [shopName, setShopName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -81,14 +91,25 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
 
   // Sync tab with URL path changes
   useEffect(() => {
-    if (location.pathname === '/signup') {
-      setActiveTab('signup');
-    } else if (location.pathname === '/super-admin-login' || defaultTab === 'superadmin') {
+    if (
+      location.pathname === '/super-admin-login' ||
+      location.pathname === '/superadmin' ||
+      location.pathname === '/admin-portal' ||
+      defaultTab === 'superadmin'
+    ) {
       setActiveTab('superadmin');
       setIdentifier('naveed@naveedpos.com');
-      setPassword('admin123');
+      setPassword('Naveed@POS2026!');
+    } else if (location.pathname === '/signup') {
+      setActiveTab('signup');
+      setIdentifier('');
+      setPassword('');
     } else if (location.pathname === '/login') {
       setActiveTab('login');
+      if (identifier === 'naveed@naveedpos.com') {
+        setIdentifier('admin@naveedpos.com');
+        setPassword('admin123');
+      }
     }
   }, [location.pathname, defaultTab]);
 
@@ -98,28 +119,22 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
     setSubscriptionError('');
     if (tab === 'superadmin') {
       setIdentifier('naveed@naveedpos.com');
-      setPassword('admin123');
-      if (location.pathname !== '/super-admin-login') {
-        window.history.replaceState(null, '', '/super-admin-login');
-      }
+      setPassword('Naveed@POS2026!');
+      navigate('/super-admin-login', { replace: true });
     } else if (tab === 'signup') {
       setIdentifier('');
       setPassword('');
-      if (location.pathname !== '/signup') {
-        window.history.replaceState(null, '', '/signup');
-      }
+      navigate('/signup', { replace: true });
     } else {
       if (identifier === 'naveed@naveedpos.com') {
         setIdentifier('admin@naveedpos.com');
         setPassword('admin123');
       }
-      if (location.pathname !== '/login') {
-        window.history.replaceState(null, '', '/login');
-      }
+      navigate('/login', { replace: true });
     }
   };
 
-  // 1. Submit Store / Super Admin Login
+  // 1. Submit Store or Super Admin Login
   const handleLoginSubmit = async (e, overrideId = null, overridePass = null) => {
     if (e) e.preventDefault();
     const idToUse = (overrideId || identifier || '').trim();
@@ -160,7 +175,10 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
         if (!err.response || err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
           msg = 'Unable to connect to backend server. Please verify connection.';
         } else if (err.response?.status === 401) {
-          msg = 'Invalid credentials. Please verify your email/phone and password.';
+          msg =
+            activeTab === 'superadmin'
+              ? 'Invalid Super Admin password. Please check your master key.'
+              : 'Invalid credentials. Please verify your email/phone and password.';
         } else {
           msg = 'Login failed. Please check your credentials and try again.';
         }
@@ -189,7 +207,6 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
       return;
     }
 
-    // Determine email & phone from identifier
     const isEmailInput = validateEmail(identifier);
     const cleanPhone = identifier.replace(/[- ]/g, '');
     const isPhoneInput = validatePakistaniPhone(cleanPhone);
@@ -240,40 +257,40 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
       <header className="h-12 w-full max-w-6xl mx-auto flex items-center justify-between px-1 z-10 flex-shrink-0">
         {/* Brand Logo & Name */}
         <div className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-slate-950 shadow-md shadow-emerald-500/20">
-            <Store className="w-4 h-4" />
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-md ${
+              activeTab === 'superadmin'
+                ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 shadow-indigo-500/20'
+                : 'bg-gradient-to-tr from-emerald-500 to-teal-500 text-slate-950 shadow-emerald-500/20'
+            }`}
+          >
+            {activeTab === 'superadmin' ? (
+              <ShieldCheck className="w-4 h-4 text-white" />
+            ) : (
+              <Store className="w-4 h-4 text-slate-950" />
+            )}
           </div>
           <div className="flex items-center space-x-1.5">
             <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-              Naveed<span className="text-emerald-500">POS</span>
+              Naveed<span className={activeTab === 'superadmin' ? 'text-indigo-500' : 'text-emerald-500'}>POS</span>
             </span>
-            <span className="hidden sm:inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              Retail SaaS
+            <span
+              className={`hidden sm:inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                activeTab === 'superadmin'
+                  ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
+                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+              }`}
+            >
+              {activeTab === 'superadmin' ? 'Super Admin Portal' : 'Retail SaaS'}
             </span>
           </div>
         </div>
 
-        {/* Right Controls: Super Admin Toggle, Helpline & Theme Toggle */}
-        <div className="flex items-center space-x-2.5">
-          {/* Quick Super Admin Switch Button */}
-          <button
-            type="button"
-            onClick={() => handleTabChange(activeTab === 'superadmin' ? 'login' : 'superadmin')}
-            className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition-all flex items-center space-x-1.5 shadow-sm ${
-              activeTab === 'superadmin'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-500 shadow-indigo-500/20'
-                : 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/60 hover:bg-indigo-50 dark:hover:bg-indigo-950/40'
-            }`}
-            title="Toggle Super Admin Console"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Super Admin</span>
-            <span>Console</span>
-          </button>
-
+        {/* Right Controls: Helpline & Theme Toggle */}
+        <div className="flex items-center space-x-3">
           <div className="hidden sm:flex items-center space-x-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
             <Headphones className="w-3.5 h-3.5 text-emerald-500" />
-            <span>+92 300 0000000</span>
+            <span>Support: +92 300 0000000</span>
           </div>
 
           <ThemeToggle />
@@ -292,7 +309,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
               <>
                 <div className="inline-flex items-center space-x-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/25 px-3 py-1 rounded-full text-xs font-bold w-fit">
                   <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-                  <span>🛡️ Platform Owner &amp; Multi-Tenant Fleet Control</span>
+                  <span>🛡️ Platform Owner Scope</span>
                 </div>
 
                 <div>
@@ -303,7 +320,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                     </span>
                   </h2>
                   <p className="text-sm font-medium text-indigo-600 dark:text-indigo-300/90 mt-1.5 font-sans">
-                    Real-time tenant telemetry, billing approvals, live system broadcasts &amp; audit trails.
+                    Private administrative gateway: Multi-tenant telemetry, subscription approvals, live broadcasts &amp; audit trails.
                   </p>
                 </div>
 
@@ -358,7 +375,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                 </div>
               </>
             ) : (
-              /* Retail Store Highlights */
+              /* Retail Store Highlights (Public View) */
               <>
                 <div className="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 px-3 py-1 rounded-full text-xs font-bold w-fit">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
@@ -436,47 +453,62 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
           {/* Right Column: Clean Compact Card (No Overflow) */}
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
             <div className="bg-white/95 dark:bg-[#1C2541]/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
-              {/* Triple Tabs: [ Store Login ] [ Super Admin ] [ Start Free Trial ] */}
-              <div className="grid grid-cols-3 p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-xl border border-slate-200 dark:border-slate-700/80 mb-4">
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('login')}
-                  className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 ${
-                    activeTab === 'login'
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Store</span>
-                </button>
+              {/* If on private Super Admin route, show Super Admin header banner instead of public tabs */}
+              {activeTab === 'superadmin' ? (
+                <div className="mb-4 pb-3 border-b border-indigo-100 dark:border-indigo-950 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                        Super Admin Access
+                      </h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        Platform Owner Master Gateway
+                      </p>
+                    </div>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('superadmin')}
-                  className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 ${
-                    activeTab === 'superadmin'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-black shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Super Admin</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('login')}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center space-x-1"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Store Login</span>
+                  </button>
+                </div>
+              ) : (
+                /* Public Dual Tabs: [ Store Login ] and [ Start Free Trial ] */
+                <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-xl border border-slate-200 dark:border-slate-700/80 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('login')}
+                    className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'login'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Store className="w-3.5 h-3.5" />
+                    <span>Store Login</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('signup')}
-                  className={`py-2 text-[11px] sm:text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 ${
-                    activeTab === 'signup'
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" />
-                  <span>Free Trial</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('signup')}
+                    className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
+                      activeTab === 'signup'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" />
+                    <span>Start Free Trial</span>
+                  </button>
+                </div>
+              )}
 
               {/* Subscription Alert Banner */}
               {subscriptionError && (
@@ -497,20 +529,20 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                 </div>
               )}
 
-              {/* Forms */}
+              {/* Form Views */}
               {activeTab === 'superadmin' ? (
                 /* ------------------------------------------------------- */
-                /* TAB: SUPER ADMIN LOGIN FORM                            */
+                /* PRIVATE SUPER ADMIN FORM                               */
                 /* ------------------------------------------------------- */
                 <form onSubmit={handleLoginSubmit} className="space-y-3">
                   <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/60 flex items-center space-x-2 text-xs text-indigo-700 dark:text-indigo-300">
                     <ShieldCheck className="w-4 h-4 flex-shrink-0 text-indigo-500" />
                     <span className="text-[11px] font-medium leading-tight">
-                      Platform Control Plane: Manage all tenant stores, plans &amp; billing.
+                      Platform Owner Scope: Full control over all store tenants, subscriptions &amp; settings.
                     </span>
                   </div>
 
-                  {/* Email Input */}
+                  {/* Super Admin Email */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                       Super Admin Email
@@ -531,7 +563,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                     </div>
                   </div>
 
-                  {/* Password Input */}
+                  {/* Master Password */}
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                       Master Password
@@ -580,17 +612,17 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                   {/* CTA 2: 1-Click Instant Demo Access */}
                   <button
                     type="button"
-                    onClick={() => handleLoginSubmit(null, 'naveed@naveedpos.com', 'admin123')}
+                    onClick={() => handleLoginSubmit(null, 'naveed@naveedpos.com', 'Naveed@POS2026!')}
                     disabled={isLoading}
                     className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5"
                   >
                     <Zap className="w-3.5 h-3.5 text-amber-500" />
-                    <span>⚡ 1-Click Instant Super Admin Access</span>
+                    <span>⚡ 1-Click Master Access</span>
                   </button>
                 </form>
               ) : activeTab === 'login' ? (
                 /* ------------------------------------------------------- */
-                /* TAB 1: STORE LOGIN FORM                                 */
+                /* PUBLIC STORE LOGIN FORM                                */
                 /* ------------------------------------------------------- */
                 <form onSubmit={handleLoginSubmit} className="space-y-3">
                   {/* Email or Phone Input */}
@@ -663,14 +695,6 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                       />
                       <span>Remember this session</span>
                     </label>
-
-                    <button
-                      type="button"
-                      onClick={() => handleTabChange('superadmin')}
-                      className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
-                    >
-                      Super Admin?
-                    </button>
                   </div>
 
                   {/* Full-Width CTA: Login to Store */}
@@ -691,7 +715,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                 </form>
               ) : (
                 /* ------------------------------------------------------- */
-                /* TAB 2: START FREE TRIAL (SIGNUP) FORM                  */
+                /* PUBLIC START FREE TRIAL FORM                           */
                 /* ------------------------------------------------------- */
                 <form onSubmit={handleSignUpSubmit} className="space-y-3">
                   {/* Store Name Input */}
@@ -790,10 +814,19 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
       </main>
 
       {/* ------------------------------------------------------------- */}
-      {/* 3. MINIMAL FOOTER STRIP (SINGLE LINE)                         */}
+      {/* 3. MINIMAL FOOTER STRIP                                       */}
       {/* ------------------------------------------------------------- */}
-      <footer className="h-8 w-full max-w-6xl mx-auto flex items-center justify-center text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800/80 z-10 flex-shrink-0">
+      <footer className="h-8 w-full max-w-6xl mx-auto flex items-center justify-between px-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800/80 z-10 flex-shrink-0">
         <p>&copy; 2026 NaveedPOS • Built for Pakistani Retailers &amp; Marts</p>
+
+        {/* Discreet Owner Gateway Trigger */}
+        <Link
+          to={activeTab === 'superadmin' ? '/login' : '/super-admin-login'}
+          className="inline-flex items-center text-slate-400 hover:text-indigo-500 transition opacity-30 hover:opacity-100"
+          title={activeTab === 'superadmin' ? 'Store Merchant Login' : 'Platform Administration'}
+        >
+          <Lock className="w-3 h-3" />
+        </Link>
       </footer>
 
       {/* Forgot Password Modal */}

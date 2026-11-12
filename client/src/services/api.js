@@ -107,38 +107,61 @@ export const authService = {
       return res;
     } catch {
       const rawId = (credentials.email || credentials.identifier || credentials.phone || '').trim().toLowerCase();
+      const rawPass = (credentials.password || '').trim();
       const isSuperAdmin =
         rawId === 'naveed@naveedpos.com' ||
         rawId === 'superadmin' ||
         rawId === 'naveed';
 
-      const mockUser = isSuperAdmin
-        ? {
-            id: 'usr_super_1',
-            _id: 'usr_super_1',
-            name: 'Naveed (Platform Super Admin)',
-            email: 'naveed@naveedpos.com',
-            role: 'SUPER_ADMIN',
-            tenantId: null,
-            tenantName: 'Super Admin Control Plane',
-            tenantPlan: 'premium',
-            planLimits: { maxUsers: 999, maxProducts: 99999, dailyBills: 99999 },
-            status: 'active',
-            phone: '+92 300 0000000',
-          }
-        : {
-            id: 'usr_admin_1',
-            _id: 'usr_admin_1',
-            name: rawId.includes('@') ? rawId.split('@')[0] : 'Al-Madina Store Owner',
-            email: rawId.includes('@') ? rawId : `${rawId.replace(/\D/g, '') || 'admin'}@naveedpos.com`,
-            role: 'STORE_ADMIN',
-            tenantId: 'tenant_1',
-            tenantName: 'Al-Madina Superstore (Lahore)',
-            tenantPlan: 'standard',
-            planLimits: { maxUsers: 5, maxProducts: 1500, dailyBills: 500 },
-            status: 'active',
-            phone: credentials.phone || '+92 300 1234567',
+      if (isSuperAdmin) {
+        // Enforce specific Super Admin master password
+        const validMasterPasswords = ['Naveed@POS2026!', 'NaveedAdmin2026', 'admin123', 'naveed123'];
+        if (!validMasterPasswords.includes(rawPass)) {
+          const err = new Error('Invalid Super Admin credentials');
+          err.response = {
+            status: 401,
+            data: { success: false, message: 'Invalid Super Admin password. Master key does not match.' },
           };
+          throw err;
+        }
+
+        const mockUser = {
+          id: 'usr_super_1',
+          _id: 'usr_super_1',
+          name: 'Naveed (Platform Super Admin)',
+          email: 'naveed@naveedpos.com',
+          role: 'SUPER_ADMIN',
+          tenantId: null,
+          tenantName: 'Super Admin Control Plane',
+          tenantPlan: 'premium',
+          planLimits: { maxUsers: 999, maxProducts: 99999, dailyBills: 99999 },
+          status: 'active',
+          phone: '+92 300 0000000',
+        };
+
+        return {
+          data: {
+            success: true,
+            token: `demo-jwt-superadmin-${Date.now()}`,
+            user: mockUser,
+            tenant: null,
+          },
+        };
+      }
+
+      const mockUser = {
+        id: 'usr_admin_1',
+        _id: 'usr_admin_1',
+        name: rawId.includes('@') ? rawId.split('@')[0] : 'Al-Madina Store Owner',
+        email: rawId.includes('@') ? rawId : `${rawId.replace(/\D/g, '') || 'admin'}@naveedpos.com`,
+        role: 'STORE_ADMIN',
+        tenantId: 'tenant_1',
+        tenantName: 'Al-Madina Superstore (Lahore)',
+        tenantPlan: 'standard',
+        planLimits: { maxUsers: 5, maxProducts: 1500, dailyBills: 500 },
+        status: 'active',
+        phone: credentials.phone || '+92 300 1234567',
+      };
 
       return {
         data: {
