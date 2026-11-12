@@ -1,0 +1,9 @@
+name = "naveedpos"
+compatibility_date = "2024-09-23"
+
+# Cloudflare Static Assets Configuration
+# Serves the compiled Vite production bundle with native SPA routing fallback
+[assets]
+directory = "./client/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
