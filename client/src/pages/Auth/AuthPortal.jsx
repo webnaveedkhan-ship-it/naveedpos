@@ -564,16 +564,7 @@ const AuthPortal = ({ defaultTab = 'login' }) => {
                 </form>
               )}
 
-              {/* Subtext Routing Notice */}
-              <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 text-[10px] text-center text-slate-500 dark:text-slate-400">
-                <p>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                    naveed@naveedpos.com
-                  </span>{' '}
-                  routes to <strong className="text-slate-700 dark:text-slate-300">/super-admin</strong> • Stores route to{' '}
-                  <strong className="text-slate-700 dark:text-slate-300">/dashboard</strong>
-                </p>
-              </div>
+
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 {
   "name": "naveedpos",
+  "main": "./worker.js",
   "compatibility_date": "2026-11-12",
   "assets": {
     "directory": "./client/dist",
