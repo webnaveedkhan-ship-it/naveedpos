@@ -180,7 +180,8 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage defaultTab="login" />} />
+          <Route path="/super-admin-login" element={<LoginPage defaultTab="superadmin" />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/auth" element={<LoginPage />} />
           <Route
