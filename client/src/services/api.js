@@ -411,14 +411,14 @@ export const superAdminService = {
         data: {
           success: true,
           metrics: {
-            totalTenants: localState.tenants.length,
-            activeTenants: localState.tenants.filter((t) => t.status === 'active').length,
-            trialTenants: localState.tenants.filter((t) => t.status === 'trial').length,
-            suspendedTenants: localState.tenants.filter((t) => t.status === 'suspended').length,
+            totalTenants: (localState.tenants || []).length,
+            activeTenants: (localState.tenants || []).filter((t) => t?.status === 'active').length,
+            trialTenants: (localState.tenants || []).filter((t) => t?.status === 'trial').length,
+            suspendedTenants: (localState.tenants || []).filter((t) => t?.status === 'suspended').length,
             totalOrders: 3840,
             totalRevenue: 2450000,
             monthlyRecurringRevenue: 45000,
-            pendingPayments: localState.payments.filter((p) => p.status === 'pending').length,
+            pendingPayments: (localState.payments || []).filter((p) => p?.status === 'pending').length,
           },
         },
       };
@@ -432,8 +432,8 @@ export const superAdminService = {
       return {
         data: {
           success: true,
-          totalTenants: localState.tenants.length,
-          activeTenants: localState.tenants.filter((t) => t.status === 'active').length,
+          totalTenants: (localState.tenants || []).length,
+          activeTenants: (localState.tenants || []).filter((t) => t?.status === 'active').length,
           totalRevenue: 2450000,
         },
       };
@@ -528,7 +528,7 @@ export const superAdminService = {
     try {
       return await api.delete(`/super-admin/tenants/${id}`);
     } catch {
-      localState.tenants = localState.tenants.filter((t) => t._id !== id);
+      localState.tenants = (localState.tenants || []).filter((t) => t?._id !== id);
       return { data: { success: true } };
     }
   },
@@ -602,7 +602,7 @@ export const superAdminService = {
     try {
       return await api.delete(`/super-admin/broadcast/${id}`);
     } catch {
-      localState.broadcasts = localState.broadcasts.filter((b) => b._id !== id);
+      localState.broadcasts = (localState.broadcasts || []).filter((b) => b?._id !== id);
       return { data: { success: true } };
     }
   },
@@ -621,7 +621,7 @@ export const broadcastService = {
     try {
       return await api.get('/broadcast/active');
     } catch {
-      return { data: { success: true, broadcasts: localState.broadcasts.filter((b) => b.isActive) } };
+      return { data: { success: true, broadcasts: (localState.broadcasts || []).filter((b) => b?.isActive) } };
     }
   },
 };
@@ -680,13 +680,13 @@ export const productService = {
     try {
       return await api.get('/products', { params });
     } catch {
-      let filtered = [...localState.products];
+      let filtered = [...(localState.products || [])];
       if (params?.search) {
         const s = params.search.toLowerCase();
-        filtered = filtered.filter((p) => p.title.toLowerCase().includes(s) || p.sku.toLowerCase().includes(s));
+        filtered = filtered.filter((p) => (p?.title || '').toLowerCase().includes(s) || (p?.sku || '').toLowerCase().includes(s));
       }
       if (params?.category && params.category !== 'all') {
-        filtered = filtered.filter((p) => p.category === params.category);
+        filtered = filtered.filter((p) => p?.category === params.category);
       }
       return {
         data: {
@@ -704,7 +704,7 @@ export const productService = {
     try {
       return await api.get('/products/low-stock');
     } catch {
-      const low = localState.products.filter((p) => Number(p.stockQuantity) <= Number(p.lowStockAlert || 8));
+      const low = (localState.products || []).filter((p) => Number(p?.stockQuantity || 0) <= Number(p?.lowStockAlert || 8));
       return { data: { success: true, products: low } };
     }
   },
@@ -792,7 +792,7 @@ export const productService = {
     try {
       return await api.delete(`/products/${id}`);
     } catch {
-      localState.products = localState.products.filter((p) => p._id !== id);
+      localState.products = (localState.products || []).filter((p) => p?._id !== id);
       return { data: { success: true } };
     }
   },
@@ -892,9 +892,9 @@ export const reportService = {
     try {
       return await api.get('/reports/dashboard-metrics', { params });
     } catch {
-      const totalRevenue = localState.orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0) + 284500;
-      const totalOrders = localState.orders.length + 142;
-      const lowStockProducts = localState.products.filter((p) => Number(p.stockQuantity) <= Number(p.lowStockAlert || 8));
+      const totalRevenue = (localState.orders || []).reduce((sum, o) => sum + (o?.grandTotal || 0), 0) + 284500;
+      const totalOrders = (localState.orders || []).length + 142;
+      const lowStockProducts = (localState.products || []).filter((p) => Number(p?.stockQuantity || 0) <= Number(p?.lowStockAlert || 8));
 
       return {
         data: {

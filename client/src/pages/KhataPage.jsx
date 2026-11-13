@@ -125,9 +125,11 @@ const KhataPage = () => {
     }
   };
 
-  const filteredCustomers = customers.filter((c) => {
-    if (debtFilter === 'debtors') return c.totalDebt > 0;
-    if (debtFilter === 'cleared') return c.totalDebt <= 0;
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter((c) => {
+    if (!c) return false;
+    if (debtFilter === 'debtors') return Number(c.totalDebt || 0) > 0;
+    if (debtFilter === 'cleared') return Number(c.totalDebt || 0) <= 0;
     return true;
   });
 

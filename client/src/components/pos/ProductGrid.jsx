@@ -37,11 +37,11 @@ const playBeep = () => {
 };
 
 const ProductGrid = ({
-  products,
-  categories,
-  activeCategory,
+  products = [],
+  categories = ['All'],
+  activeCategory = 'All',
   onSelectCategory,
-  loading,
+  loading = false,
   onOpenQuickAdd,
   onOpenCashDrawer,
   onOpenMobileCart,
@@ -50,17 +50,21 @@ const ProductGrid = ({
   const { addToCart, cartItems, totalItemCount, grandTotal } = useCart();
   const [addedEffectId, setAddedEffectId] = useState(null);
 
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeCategories = Array.isArray(categories) ? categories : ['All'];
+
   // Filter products by category and search keyword
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    return safeProducts.filter((product) => {
+      if (!product) return false;
       const matchesCategory =
         activeCategory === 'All' || product.category === activeCategory;
       const matchesSearch =
-        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+        (product.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [products, activeCategory, searchTerm]);
+  }, [safeProducts, activeCategory, searchTerm]);
 
   // Handle 1-tap add to cart with feedback
   const handleItemTap = (product) => {
@@ -132,7 +136,7 @@ const ProductGrid = ({
         <div className="flex items-center justify-between gap-2">
           {/* Category Filter Pills (Horizontal swipe) */}
           <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none flex-1">
-            {categories.map((cat) => {
+            {safeCategories.map((cat) => {
               const isActive = activeCategory === cat;
               return (
                 <button

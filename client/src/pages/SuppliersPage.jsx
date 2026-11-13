@@ -223,12 +223,12 @@ const SuppliersPage = () => {
   };
 
   const removeItemRow = (index) => {
-    if (newPurchase.items.length <= 1) return;
-    const updated = newPurchase.items.filter((_, i) => i !== index);
+    if ((newPurchase.items || []).length <= 1) return;
+    const updated = (newPurchase.items || []).filter((_, i) => i !== index);
     setNewPurchase({ ...newPurchase, items: updated });
   };
 
-  const invoiceTotal = newPurchase.items.reduce((sum, it) => sum + (Number(it.subtotal) || 0), 0);
+  const invoiceTotal = (newPurchase.items || []).reduce((sum, it) => sum + (Number(it.subtotal) || 0), 0);
 
   // Handle submit purchase
   const handleCreatePurchase = async (e) => {
@@ -239,7 +239,7 @@ const SuppliersPage = () => {
       setPurchaseError('Please select a supplier.');
       return;
     }
-    const validItems = newPurchase.items.filter((it) => it.title.trim() && it.quantity > 0);
+    const validItems = (newPurchase.items || []).filter((it) => it && (it.title || '').trim() && it.quantity > 0);
     if (validItems.length === 0) {
       setPurchaseError('Please add at least one valid product item.');
       return;

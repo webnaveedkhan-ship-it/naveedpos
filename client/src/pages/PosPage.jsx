@@ -31,17 +31,21 @@ const PosPage = () => {
     try {
       setLoading(true);
       const res = await productService.getProducts({ all: 'true' });
-      if (res.data.success) {
-        setProducts(res.data.products);
+      if (res.data?.success) {
+        const productList = Array.isArray(res.data.products) ? res.data.products : [];
+        setProducts(productList);
 
         // Extract distinct categories
         const distinct = Array.from(
-          new Set(res.data.products.map((p) => p.category).filter(Boolean))
+          new Set(productList.map((p) => p.category).filter(Boolean))
         );
         setCategories(['All', ...distinct]);
+      } else {
+        setProducts([]);
       }
     } catch (err) {
       console.error('Failed to load POS catalog:', err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }

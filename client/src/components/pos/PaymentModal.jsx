@@ -244,10 +244,11 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
     }
   };
 
-  const filteredCustomers = customers.filter(
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter(
     (c) =>
-      c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-      c.phone.toLowerCase().includes(customerSearch.toLowerCase())
+      (c?.name || '').toLowerCase().includes(customerSearch.toLowerCase()) ||
+      (c?.phone || '').toLowerCase().includes(customerSearch.toLowerCase())
   );
 
   return (

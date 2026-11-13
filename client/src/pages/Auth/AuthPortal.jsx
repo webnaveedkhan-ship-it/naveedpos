@@ -84,21 +84,24 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     }
   });
 
-  // Active tab state: 'superadmin' | 'login' | 'signup'
+  // Active tab state: 'superadmin' | 'signup' | 'login'
+  // 14-Day Free Trial is the primary recommended option
   const [activeTab, setActiveTab] = useState(() => {
     if (isSuperAdminPath) return 'superadmin';
-    if (isSignUpPath) return 'signup';
-    return 'login';
+    if (location.pathname === '/login' || location.pathname === '/store-login' || defaultTab === 'login') {
+      return 'login';
+    }
+    return 'signup'; // Default to 14-Day Free Trial
   });
 
   // Form Fields State
   const [identifier, setIdentifier] = useState(() => {
     if (isSuperAdminPath) return 'naveed@naveedpos.com';
-    return 'store@naveedpos.com';
+    return '';
   });
   const [password, setPassword] = useState(() => {
     if (isSuperAdminPath) return 'Naveed@POS2026!';
-    return 'admin123';
+    return '';
   });
   const [shopName, setShopName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -172,12 +175,12 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       }
       navigate('/free-trial', { replace: true });
     } else {
-      // Store Admin (Store Login)
+      // Store Sign In (Login)
       if (identifier === 'naveed@naveedpos.com') {
-        setIdentifier('store@naveedpos.com');
-        setPassword('admin123');
+        setIdentifier('');
+        setPassword('');
       }
-      navigate('/store-login', { replace: true });
+      navigate('/login', { replace: true });
     }
   };
 
@@ -504,7 +507,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
             <div className="bg-white/95 dark:bg-[#1C2541]/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
               {/* ------------------------------------------------------------- */}
-              {/* TOP SEGMENTED SWITCHER: [ Super Admin ] | [ Store Admin ] | [ Free Trial ] */}
+              {/* TOP SEGMENTED SWITCHER: [ 14-Day Free Trial ] | [ Sign In ]   */}
               {/* Super Admin option is ONLY displayed when owner is identified */}
               {/* ------------------------------------------------------------- */}
               <div
@@ -529,22 +532,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   </button>
                 )}
 
-                {/* 2. STORE ADMIN TAB - Visible to Everyone */}
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('login')}
-                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
-                    activeTab === 'login'
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
-                  }`}
-                  title="Store POS & Counter Login (/store-login)"
-                >
-                  <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                  <span className="truncate">Store Admin</span>
-                </button>
-
-                {/* 3. FREE TRIAL TAB - Visible to Everyone */}
+                {/* 2. 14-DAY FREE TRIAL TAB - Best Option (Visible to Everyone) */}
                 <button
                   type="button"
                   onClick={() => handleTabChange('signup')}
@@ -556,7 +544,22 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   title="14-Day Free Store Trial (/free-trial)"
                 >
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-amber-500 dark:text-amber-300" />
-                  <span className="truncate">Free Trial</span>
+                  <span className="truncate">14-Day Free Trial</span>
+                </button>
+
+                {/* 3. SIGN IN TAB - For Existing Store Accounts */}
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('login')}
+                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                    activeTab === 'login'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                  }`}
+                  title="Sign In to Existing Store (/login)"
+                >
+                  <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="truncate">Sign In</span>
                 </button>
               </div>
 
@@ -575,17 +578,17 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                 <div className="mb-3 p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
                   <div className="flex items-center space-x-1.5 truncate">
                     <Store className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                    <span className="text-[11px] font-bold truncate">Retail Store &amp; POS Counter</span>
+                    <span className="text-[11px] font-bold truncate">Sign In to Existing Store</span>
                   </div>
                   <span className="text-[10px] font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400">
-                    /store-login
+                    /login
                   </span>
                 </div>
               ) : (
                 <div className="mb-3 p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
                   <div className="flex items-center space-x-1.5 truncate">
                     <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                    <span className="text-[11px] font-bold truncate">Instant 14-Day Free Store Trial</span>
+                    <span className="text-[11px] font-bold truncate">Instant 14-Day Free Trial (No Card Needed)</span>
                   </div>
                   <span className="text-[10px] font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400">
                     /free-trial
@@ -807,6 +810,19 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     <Zap className="w-3.5 h-3.5 text-emerald-500" />
                     <span>⚡ 1-Click Store Demo</span>
                   </button>
+
+                  {/* Switch to Free Trial */}
+                  <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                    New to NaveedPOS?{' '}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('signup')}
+                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center space-x-1"
+                    >
+                      <span>Start 14-Day Free Trial</span>
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                    </button>
+                  </div>
                 </form>
               ) : (
                 /* ------------------------------------------------------- */
@@ -901,6 +917,18 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                       </>
                     )}
                   </button>
+
+                  {/* Switch to Sign In */}
+                  <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                    Already have a registered account?{' '}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('login')}
+                      className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      Sign In here
+                    </button>
+                  </div>
                 </form>
               )}
             </div>

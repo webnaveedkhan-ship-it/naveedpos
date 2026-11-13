@@ -21,6 +21,8 @@ const LowStockAlertWidget = ({
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const safeProducts = Array.isArray(products) ? products : [];
+
   const handleOpenRestock = (product) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
@@ -38,8 +40,8 @@ const LowStockAlertWidget = ({
     handleCloseRestock();
   };
 
-  const outOfStockCount = products.filter(
-    (p) => Number(p.stockQuantity || 0) <= 0
+  const outOfStockCount = safeProducts.filter(
+    (p) => Number(p?.stockQuantity || 0) <= 0
   ).length;
 
   return (
@@ -53,12 +55,12 @@ const LowStockAlertWidget = ({
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                products.length > 0
+                safeProducts.length > 0
                   ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400'
                   : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400'
               }`}
             >
-              {products.length > 0 ? (
+              {safeProducts.length > 0 ? (
                 <AlertTriangle className="w-5 h-5 animate-pulse" />
               ) : (
                 <CheckCircle2 className="w-5 h-5" />
@@ -69,9 +71,9 @@ const LowStockAlertWidget = ({
                 <h2 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
                   Low Stock & Critical Inventory
                 </h2>
-                {products.length > 0 && (
+                {safeProducts.length > 0 && (
                   <span className="px-2 py-0.5 text-xs font-black rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400">
-                    {products.length} {products.length === 1 ? 'Item' : 'Items'}
+                    {safeProducts.length} {safeProducts.length === 1 ? 'Item' : 'Items'}
                   </span>
                 )}
                 {outOfStockCount > 0 && (
@@ -98,7 +100,7 @@ const LowStockAlertWidget = ({
         </div>
 
         {/* Content Table or Empty State */}
-        {products.length === 0 ? (
+        {safeProducts.length === 0 ? (
           <div className="py-10 px-4 text-center flex flex-col items-center justify-center">
             <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
               <CheckCircle2 className="w-8 h-8" />
@@ -131,7 +133,7 @@ const LowStockAlertWidget = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {products.map((item) => {
+                {safeProducts.map((item) => {
                   const stock = Number(item.stockQuantity || 0);
                   const threshold = Number(
                     item.lowStockAlert || item.lowStockThreshold || 5

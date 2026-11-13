@@ -105,16 +105,18 @@ export default function BarcodeGeneratorPage() {
     fetchProducts();
   }, []);
 
+  const safeProducts = Array.isArray(products) ? products : [];
+
   const filteredProducts = useMemo(() => {
-    if (!searchTerm) return products.slice(0, 8);
+    if (!searchTerm) return safeProducts.slice(0, 8);
     const q = searchTerm.toLowerCase();
-    return products.filter(
+    return safeProducts.filter(
       (p) =>
-        (p.name || p.title || '').toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        p.barcode?.toLowerCase().includes(q)
+        (p?.name || p?.title || '').toLowerCase().includes(q) ||
+        p?.sku?.toLowerCase().includes(q) ||
+        p?.barcode?.toLowerCase().includes(q)
     );
-  }, [products, searchTerm]);
+  }, [safeProducts, searchTerm]);
 
   const addToQueue = (product) => {
     const existingIndex = queue.findIndex((item) => item.id === product._id);

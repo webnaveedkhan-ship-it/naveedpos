@@ -93,9 +93,16 @@ const ReportsPage = () => {
   const collectedCashAndBank = cashCollected + cardCollected;
   const outstandingKhata = Number(kpis.marketUdhar || paymentMethods.find((p) => p.method === 'KHATA')?.amount || 0);
 
+  const safeRecentOrders = Array.isArray(recentOrders) && recentOrders.length > 0
+    ? recentOrders
+    : Array.isArray(data?.orders)
+    ? data.orders
+    : [];
+
   // Filter orders by search & payment method
   const filteredOrders = useMemo(() => {
-    return recentOrders.filter((o) => {
+    return safeRecentOrders.filter((o) => {
+      if (!o) return false;
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -108,7 +115,7 @@ const ReportsPage = () => {
 
       return matchesSearch && matchesPayment;
     });
-  }, [recentOrders, searchQuery, paymentFilter]);
+  }, [safeRecentOrders, searchQuery, paymentFilter]);
 
   // 1-Click Excel CSV Export
   const handleExportCSV = () => {

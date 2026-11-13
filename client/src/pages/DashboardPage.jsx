@@ -236,10 +236,25 @@ const DashboardPage = () => {
     periodLabel = 'Today',
   } = data || {};
 
+  const safeLowStockProducts = Array.isArray(lowStockProducts)
+    ? lowStockProducts
+    : Array.isArray(data?.products)
+    ? data.products
+    : [];
+
+  const safeRecentOrders = Array.isArray(recentOrders) && recentOrders.length > 0
+    ? recentOrders
+    : Array.isArray(data?.orders)
+    ? data.orders
+    : [];
+
+  const safeTimeseries = Array.isArray(timeseries) ? timeseries : [];
+  const safeTopSellingProducts = Array.isArray(topSellingProducts) ? topSellingProducts : [];
+
   const lowStockCount =
     summary.lowStockCount !== undefined
       ? summary.lowStockCount
-      : lowStockProducts.length;
+      : safeLowStockProducts.length;
 
   const growth = summary.revenueGrowthPercent !== undefined ? summary.revenueGrowthPercent : 0;
   const isPositiveGrowth = growth >= 0;
@@ -606,15 +621,15 @@ const DashboardPage = () => {
 
             {/* Dynamic Visualizer Bar Chart */}
             <div className="h-48 flex items-end justify-between gap-2 sm:gap-3 pt-6 pb-2 px-2 border-b border-slate-100 dark:border-slate-800">
-              {timeseries.length === 0 ? (
+              {safeTimeseries.length === 0 ? (
                 <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
                   No sales recorded for this period yet.
                 </div>
               ) : (
-                timeseries.map((d, idx) => {
+                safeTimeseries.map((d, idx) => {
                   const maxRev = Math.max(
                     1,
-                    ...timeseries.map((item) => Number(item.revenue || 0))
+                    ...safeTimeseries.map((item) => Number(item.revenue || 0))
                   );
                   const revHeight = Math.max(
                     8,
@@ -670,7 +685,7 @@ const DashboardPage = () => {
       {/* 2. Low Stock & Critical Inventory Restock Widget */}
       <motion.div variants={itemVariants}>
         <LowStockAlertWidget
-          products={lowStockProducts}
+          products={safeLowStockProducts}
           onRestockSuccess={handleRestockSuccess}
           isLoading={isLoading}
         />
@@ -698,7 +713,7 @@ const DashboardPage = () => {
                       <Receipt className="w-4 h-4 text-brand-600" />
                       <span>{periodLabel} Sales Transactions</span>
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {recentOrders.length}
+                        {safeRecentOrders.length}
                       </span>
                     </h2>
                     <p className="text-[11px] text-slate-500">
@@ -711,7 +726,7 @@ const DashboardPage = () => {
                     <button
                       type="button"
                       onClick={handleExportCsv}
-                      disabled={recentOrders.length === 0}
+                      disabled={safeRecentOrders.length === 0}
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center space-x-1.5 disabled:opacity-50"
                       title="Export this view to CSV"
                     >
@@ -743,14 +758,14 @@ const DashboardPage = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                      {recentOrders.length === 0 ? (
+                      {safeRecentOrders.length === 0 ? (
                         <tr>
                           <td colSpan="7" className="py-8 text-center text-slate-400">
                             No sales recorded for {periodLabel.toLowerCase()} yet.
                           </td>
                         </tr>
                       ) : (
-                        recentOrders.slice(0, 10).map((order) => {
+                        safeRecentOrders.slice(0, 10).map((order) => {
                           const pm = (order.paymentMethod || 'CASH').toUpperCase();
                           return (
                             <tr
@@ -838,12 +853,12 @@ const DashboardPage = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {topSellingProducts.length === 0 ? (
+                  {safeTopSellingProducts.length === 0 ? (
                     <div className="py-8 text-center text-xs text-slate-400">
                       No products sold during {periodLabel.toLowerCase()} yet.
                     </div>
                   ) : (
-                    topSellingProducts.map((p, idx) => (
+                    safeTopSellingProducts.map((p, idx) => (
                       <div
                         key={p._id || p.productId || idx}
                         className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition"

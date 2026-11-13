@@ -5,7 +5,7 @@ import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '../../context/AuthContext';
 import { AlertCircle, Percent, DollarSign, Lock } from 'lucide-react';
 
-const ProductModal = ({ isOpen, onClose, onSave, product, categories }) => {
+const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => {
   const { planLimits } = useAuth();
   const allowFractionalUnits = planLimits?.allowFractionalUnits ?? true;
 
@@ -172,8 +172,8 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories }) => {
               className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
             />
             <datalist id="category-suggestions">
-              {categories
-                .filter((c) => c !== 'All')
+              {(categories || [])
+                .filter((c) => c && c !== 'All')
                 .map((c) => (
                   <option key={c} value={c} />
                 ))}

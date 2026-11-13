@@ -38,10 +38,11 @@ const PaymentDonutChart = ({
   paymentMethods = [],
   totalOrders = 0,
 }) => {
+  const safePaymentMethods = Array.isArray(paymentMethods) ? paymentMethods : [];
   // Ensure we have non-empty data with positive amounts
-  const hasData = paymentMethods.some((p) => Number(p.amount) > 0);
+  const hasData = safePaymentMethods.some((p) => Number(p?.amount || 0) > 0);
   const chartData = hasData
-    ? paymentMethods.filter((p) => Number(p.amount) > 0)
+    ? safePaymentMethods.filter((p) => Number(p?.amount || 0) > 0)
     : [
         { label: 'Cash', amount: 0, color: '#10b981', percentage: 0 },
         { label: 'Market Udhar', amount: 0, color: '#f59e0b', percentage: 0 },
