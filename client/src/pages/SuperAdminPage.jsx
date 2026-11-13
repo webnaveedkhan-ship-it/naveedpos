@@ -350,42 +350,42 @@ const SuperAdminPage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
+    <div className="flex-1 flex flex-col overflow-hidden bg-slate-950 animate-fadeIn">
       {/* Top Header Bar */}
-      <header className="bg-slate-900 border-b border-slate-800 text-white px-6 py-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <header className="bg-slate-900 border-b border-slate-800 text-white px-3 sm:px-6 py-3 sm:py-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-brand-500/20 flex-shrink-0">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <h1 className="text-xl font-black tracking-tight text-white">NaveedPOS Super Admin</h1>
+              <div className="flex items-center space-x-2 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black tracking-tight text-white">NaveedPOS Super Admin</h1>
                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-500/40 rounded-full">
-                  Platform Owner Console
+                  Platform Console
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-400">
                 SaaS Governance & Tenant Administration • Master Administrator: Naveed
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 self-end sm:self-auto">
             {metrics?.pendingPaymentsCount > 0 && (
               <button
                 onClick={() => handleTabChange('payments')}
-                className="flex items-center space-x-2 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition animate-pulse"
+                className="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition active:scale-[0.97]"
               >
-                <Clock className="w-4 h-4 text-amber-400" />
-                <span>{metrics.pendingPaymentsCount} Slips Pending</span>
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                <span>{metrics.pendingPaymentsCount} Slips</span>
               </button>
             )}
 
             <button
               onClick={fetchPlatformData}
               disabled={refreshing}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 disabled:opacity-50"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 disabled:opacity-50 active:scale-[0.97] min-h-[40px] min-w-[40px] flex items-center justify-center"
               title="Refresh Platform Data"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
@@ -393,7 +393,7 @@ const SuperAdminPage = () => {
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-brand-600/30 transition"
+              className="flex items-center space-x-1.5 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-brand-600 to-emerald-600 hover:from-brand-500 hover:to-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-brand-600/30 active:scale-[0.97] transition min-h-[40px]"
             >
               <Plus className="w-4 h-4" />
               <span>Register Store</span>
@@ -402,10 +402,10 @@ const SuperAdminPage = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center space-x-1 mt-5 overflow-x-auto no-scrollbar border-t border-slate-800 pt-3">
+        <div className="flex items-center space-x-1 mt-4 sm:mt-5 overflow-x-auto no-scrollbar border-t border-slate-800 pt-2.5 sm:pt-3">
           <button
             onClick={() => handleTabChange('telemetry')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'telemetry'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -417,7 +417,7 @@ const SuperAdminPage = () => {
 
           <button
             onClick={() => handleTabChange('tenants')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'tenants'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -434,7 +434,7 @@ const SuperAdminPage = () => {
 
           <button
             onClick={() => handleTabChange('payments')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'payments'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -451,7 +451,7 @@ const SuperAdminPage = () => {
 
           <button
             onClick={() => handleTabChange('broadcast')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'broadcast'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -463,7 +463,7 @@ const SuperAdminPage = () => {
 
           <button
             onClick={() => handleTabChange('audit')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'audit'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -476,7 +476,7 @@ const SuperAdminPage = () => {
       </header>
 
       {/* Main View Area */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6 max-w-7xl w-full mx-auto space-y-6">
+      <main className="flex-1 overflow-y-auto p-3 sm:p-6 pb-24 md:pb-6 max-w-7xl w-full mx-auto space-y-6">
         {activeTab === 'telemetry' && (
           <SuperAdminDashboard
             metrics={metrics}
