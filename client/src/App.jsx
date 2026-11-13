@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import Navbar from './components/common/Navbar';
-import Sidebar from './components/common/Sidebar';
-import MobileBottomNav from './components/common/MobileBottomNav';
+import SuperAdminLayout from './layouts/SuperAdminLayout';
+import StoreLayout from './layouts/StoreLayout';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import PosPage from './pages/PosPage';
@@ -21,9 +20,11 @@ import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
 import StaffPage from './pages/StaffPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
-// Protected Route wrapper
-const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false }) => {
-  const { isAuthenticated, isSuperAdmin, isImpersonating, loading } = useAuth();
+// ----------------------------------------------------------------------
+// 1. ROLE-BASED ROUTE GUARD WITH STRICT ARCHITECTURAL ISOLATION
+// ----------------------------------------------------------------------
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { user, isAuthenticated, isImpersonating, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -40,222 +41,191 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
   // Synchronous localStorage fallback to prevent React 18 state batching race conditions
   const savedToken = localStorage.getItem('token');
   const savedUserStr = localStorage.getItem('user');
-  let effectiveUser = null;
-  try {
-    effectiveUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-  } catch (e) {}
+  let effectiveUser = user;
+  if (!effectiveUser && savedUserStr) {
+    try {
+      effectiveUser = JSON.parse(savedUserStr);
+    } catch (e) {}
+  }
 
   const hasSession = isAuthenticated || (!!savedToken && !!effectiveUser);
 
   if (!hasSession) {
-    if (requireSuperAdmin) {
+    if (allowedRoles.includes('SUPER_ADMIN')) {
       return <Navigate to="/super-admin-login" state={{ from: location }} replace />;
     }
-    return <Navigate to="/store-login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   const effectiveRole = (effectiveUser?.role || '').toUpperCase();
   const effectiveEmail = (effectiveUser?.email || '').toLowerCase();
-  // Role Guard: Only true platform super admins are recognized as Super Admin
-  const effectiveIsSuperAdmin =
-    isSuperAdmin ||
+  const isSuperAdmin =
     effectiveRole === 'SUPER_ADMIN' ||
     effectiveRole === 'SUPERADMIN' ||
     effectiveEmail === 'naveed@naveedpos.com';
 
-  if (requireSuperAdmin && !effectiveIsSuperAdmin) {
-    return <Navigate to="/dashboard" replace />;
+  // 1. Strict Isolation: Super Admin route requested
+  if (allowedRoles.includes('SUPER_ADMIN')) {
+    if (!isSuperAdmin) {
+      // Store user attempting to visit Super Admin platform -> redirect to store dashboard
+      return <Navigate to="/dashboard" replace />;
+    }
+    return children;
   }
 
-  // Strict architectural separation: Super Admin (when not impersonating a store)
-  // is strictly routed to the Platform Console (/super-admin) and cannot access store routes
-  if (storeOnly && effectiveIsSuperAdmin && !isImpersonating) {
+  // 2. Strict Isolation: Store route requested
+  // If Super Admin visits a store route (and is not actively impersonating a store)
+  if (isSuperAdmin && !isImpersonating) {
     return <Navigate to="/super-admin" replace />;
+  }
+
+  // 3. Sub-role restriction: Only store owners can access /staff and /billing
+  if (allowedRoles.includes('STORE_OWNER')) {
+    const isOwner =
+      effectiveRole === 'STORE_OWNER' ||
+      effectiveRole === 'STORE_ADMIN' ||
+      effectiveRole === 'ADMIN' ||
+      effectiveRole === '' ||
+      isImpersonating;
+    if (!isOwner && effectiveRole === 'CASHIER') {
+      return <Navigate to="/pos" replace />;
+    }
   }
 
   return children;
 };
 
-// Main App Layout
-const AppLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    return typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
-  });
-  const { isSuperAdmin, isImpersonating } = useAuth();
+// ----------------------------------------------------------------------
+// 2. ROOT & DEFAULT REDIRECT
+// ----------------------------------------------------------------------
+const RootRedirect = () => {
+  const { user, isAuthenticated, isImpersonating } = useAuth();
+  const savedToken = localStorage.getItem('token');
+  const savedUserStr = localStorage.getItem('user');
+  let effectiveUser = user;
+  if (!effectiveUser && savedUserStr) {
+    try {
+      effectiveUser = JSON.parse(savedUserStr);
+    } catch (e) {}
+  }
 
-  // Listen for global custom events to open/toggle sidebar from any mobile button
-  useEffect(() => {
-    const handleToggle = () => setIsSidebarOpen((prev) => !prev);
-    const handleOpen = () => setIsSidebarOpen(true);
-    const handleClose = () => setIsSidebarOpen(false);
+  const hasSession = isAuthenticated || (!!savedToken && !!effectiveUser);
+  if (!hasSession) {
+    return <Navigate to="/login" replace />;
+  }
 
-    window.addEventListener('toggle-sidebar', handleToggle);
-    window.addEventListener('open-sidebar', handleOpen);
-    window.addEventListener('close-sidebar', handleClose);
+  const effectiveRole = (effectiveUser?.role || '').toUpperCase();
+  const effectiveEmail = (effectiveUser?.email || '').toLowerCase();
+  const isSuperAdmin =
+    effectiveRole === 'SUPER_ADMIN' ||
+    effectiveRole === 'SUPERADMIN' ||
+    effectiveEmail === 'naveed@naveedpos.com';
 
-    return () => {
-      window.removeEventListener('toggle-sidebar', handleToggle);
-      window.removeEventListener('open-sidebar', handleOpen);
-      window.removeEventListener('close-sidebar', handleClose);
-    };
-  }, []);
+  if (isSuperAdmin && !isImpersonating) {
+    return <Navigate to="/super-admin" replace />;
+  }
 
-  const defaultRoute = isSuperAdmin && !isImpersonating ? '/super-admin' : '/dashboard';
-
-  return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
-      <Navbar
-        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-        isSidebarOpen={isSidebarOpen}
-      />
-      <div className="flex-1 flex overflow-visible lg:overflow-hidden relative">
-        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-        <main className="flex-1 flex flex-col overflow-hidden relative pb-16 md:pb-0">
-          <ErrorBoundary>
-            <Routes>
-              <Route
-                path="/super-admin"
-                element={
-                  <ProtectedRoute requireSuperAdmin>
-                    <SuperAdminPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/super-admin/:tab"
-                element={
-                  <ProtectedRoute requireSuperAdmin>
-                    <SuperAdminPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/pos"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <PosPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/products"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <InventoryPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/products/barcode-generator"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <BarcodeGeneratorPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/barcode-generator" element={<Navigate to="/products/barcode-generator" replace />} />
-              <Route path="/inventory" element={<Navigate to="/products" replace />} />
-              <Route
-                path="/khata"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <KhataPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/orders"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <OrdersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/expenses"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <ExpensesPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/suppliers"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <SuppliersPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <ReportsPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings/billing"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <BillingPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/staff"
-                element={
-                  <ProtectedRoute storeOnly>
-                    <StaffPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/users" element={<Navigate to="/staff" replace />} />
-              <Route path="/settings" element={<Navigate to="/settings/billing" replace />} />
-              <Route path="/billing" element={<Navigate to="/settings/billing" replace />} />
-              <Route path="/naveedpos" element={<Navigate to={defaultRoute} replace />} />
-              <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-              <Route path="*" element={<Navigate to={defaultRoute} replace />} />
-            </Routes>
-          </ErrorBoundary>
-        </main>
-      </div>
-      <MobileBottomNav />
-    </div>
-  );
+  return <Navigate to="/dashboard" replace />;
 };
 
+// ----------------------------------------------------------------------
+// 3. MAIN APPLICATION ROUTING TABLE
+// ----------------------------------------------------------------------
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
         <CartProvider>
           <Routes>
+            {/* ========================================================== */}
+            {/* A. PUBLIC AUTHENTICATION & ONBOARDING ROUTES               */}
+            {/* ========================================================== */}
             <Route path="/login" element={<LoginPage defaultTab="login" />} />
             <Route path="/store-login" element={<LoginPage defaultTab="login" />} />
+            <Route path="/register" element={<SignUpPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/free-trial" element={<SignUpPage />} />
             <Route path="/super-admin-login" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
             <Route path="/superadmin" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
             <Route path="/admin-portal" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/free-trial" element={<SignUpPage />} />
             <Route path="/auth" element={<LoginPage defaultTab="login" />} />
+
+            {/* ========================================================== */}
+            {/* B. SUPER ADMIN PLATFORM CONSOLE (/super-admin/*)          */}
+            {/*    Exclusively for SUPER_ADMIN role (tenantId: null)       */}
+            {/* ========================================================== */}
             <Route
-              path="/*"
+              path="/super-admin"
               element={
-                <ProtectedRoute>
-                  <AppLayout />
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+                  <SuperAdminLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<SuperAdminPage />} />
+              <Route path="stores" element={<SuperAdminPage />} />
+              <Route path="tenants" element={<SuperAdminPage />} />
+              <Route path="payments" element={<SuperAdminPage />} />
+              <Route path="plans" element={<SuperAdminPage />} />
+              <Route path="settings" element={<SuperAdminPage />} />
+              <Route path="broadcast" element={<SuperAdminPage />} />
+              <Route path="audit" element={<SuperAdminPage />} />
+              <Route path=":tab" element={<SuperAdminPage />} />
+            </Route>
+
+            {/* ========================================================== */}
+            {/* C. STORE ADMIN & RETAIL COUNTER DASHBOARD                 */}
+            {/*    Exclusively for STORE_OWNER & CASHIER (tenantId: id)    */}
+            {/* ========================================================== */}
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={['STORE_OWNER', 'CASHIER']}>
+                  <StoreLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/pos" element={<PosPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/products" element={<Navigate to="/inventory" replace />} />
+              <Route path="/products/barcode-generator" element={<BarcodeGeneratorPage />} />
+              <Route path="/barcode-generator" element={<Navigate to="/products/barcode-generator" replace />} />
+              <Route path="/khata" element={<KhataPage />} />
+              <Route path="/sales" element={<OrdersPage />} />
+              <Route path="/orders" element={<Navigate to="/sales" replace />} />
+              <Route path="/cashbook" element={<ExpensesPage />} />
+              <Route path="/expenses" element={<Navigate to="/cashbook" replace />} />
+              <Route path="/suppliers" element={<SuppliersPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+
+              {/* Owner-Restricted Store Management Routes */}
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute allowedRoles={['STORE_OWNER']}>
+                    <StaffPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/users" element={<Navigate to="/staff" replace />} />
+              <Route
+                path="/billing"
+                element={
+                  <ProtectedRoute allowedRoles={['STORE_OWNER']}>
+                    <BillingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/settings" element={<Navigate to="/billing" replace />} />
+              <Route path="/settings/billing" element={<Navigate to="/billing" replace />} />
+            </Route>
+
+            {/* ========================================================== */}
+            {/* D. FALLBACKS & ROOT REDIRECTS                             */}
+            {/* ========================================================== */}
+            <Route path="/naveedpos" element={<RootRedirect />} />
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="*" element={<RootRedirect />} />
           </Routes>
         </CartProvider>
       </AuthProvider>

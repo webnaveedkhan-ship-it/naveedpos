@@ -8,6 +8,8 @@ import TenantsDirectory from '../components/superadmin/TenantsDirectory';
 import PaymentApprovals from '../components/superadmin/PaymentApprovals';
 import SystemBroadcast from '../components/superadmin/SystemBroadcast';
 import SecurityAuditTrail from '../components/superadmin/SecurityAuditTrail';
+import PlansAndPricing from '../components/superadmin/PlansAndPricing';
+import PlatformSettings from '../components/superadmin/PlatformSettings';
 import {
   ShieldCheck,
   Building2,
@@ -15,6 +17,8 @@ import {
   Megaphone,
   ShieldAlert,
   Activity,
+  Layers,
+  Settings,
   Plus,
   RefreshCw,
   Clock,
@@ -30,12 +34,15 @@ const SuperAdminPage = () => {
   const { impersonateStore } = useAuth();
 
   // Tab mapping
-  const validTabs = ['telemetry', 'tenants', 'payments', 'broadcast', 'audit'];
-  const activeTab = validTabs.includes(tab) ? tab : 'telemetry';
+  const validTabs = ['telemetry', 'stores', 'tenants', 'payments', 'plans', 'settings', 'broadcast', 'audit'];
+  const normalizedTab = tab === 'stores' ? 'tenants' : tab;
+  const activeTab = validTabs.includes(tab) ? normalizedTab : 'telemetry';
 
   const handleTabChange = (newTab) => {
     if (newTab === 'telemetry') {
       navigate('/super-admin');
+    } else if (newTab === 'tenants') {
+      navigate('/super-admin/stores');
     } else {
       navigate(`/super-admin/${newTab}`);
     }
@@ -450,6 +457,30 @@ const SuperAdminPage = () => {
           </button>
 
           <button
+            onClick={() => handleTabChange('plans')}
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
+              activeTab === 'plans'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Plans &amp; Pricing</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('settings')}
+            className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
+              activeTab === 'settings'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            <span>Platform Settings</span>
+          </button>
+
+          <button
             onClick={() => handleTabChange('broadcast')}
             className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap active:scale-[0.97] ${
               activeTab === 'broadcast'
@@ -528,6 +559,10 @@ const SuperAdminPage = () => {
             onOpenLightbox={(img) => setLightboxImage(img)}
           />
         )}
+
+        {activeTab === 'plans' && <PlansAndPricing />}
+
+        {activeTab === 'settings' && <PlatformSettings />}
 
         {activeTab === 'broadcast' && (
           <SystemBroadcast
