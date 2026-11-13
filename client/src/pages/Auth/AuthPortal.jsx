@@ -47,7 +47,18 @@ const validateEmail = (val) => {
 const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, registerTrial } = useAuth();
+  const { login, registerTrial, isAuthenticated, isSuperAdmin, isImpersonating } = useAuth();
+
+  // If already authenticated, redirect immediately to appropriate platform view
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isSuperAdmin && !isImpersonating) {
+        navigate('/super-admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, isSuperAdmin, isImpersonating, navigate]);
 
   // Determine if this is the private Super Admin portal
   const isSuperAdminPath =

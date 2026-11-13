@@ -20,8 +20,8 @@ import SuppliersPage from './pages/SuppliersPage';
 import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
 
 // Protected Route wrapper
-const ProtectedRoute = ({ children, requireSuperAdmin = false }) => {
-  const { isAuthenticated, isSuperAdmin, loading } = useAuth();
+const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false }) => {
+  const { isAuthenticated, isSuperAdmin, isImpersonating, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -63,6 +63,12 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false }) => {
 
   if (requireSuperAdmin && !effectiveIsSuperAdmin) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Strict architectural separation: Super Admin (when not impersonating a store)
+  // is strictly routed to the Platform Console (/super-admin) and cannot access store routes
+  if (storeOnly && effectiveIsSuperAdmin && !isImpersonating) {
+    return <Navigate to="/super-admin" replace />;
   }
 
   return children;
