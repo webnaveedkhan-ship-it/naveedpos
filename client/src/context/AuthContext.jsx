@@ -26,6 +26,14 @@ export const AuthProvider = ({ children }) => {
   const [isImpersonating, setIsImpersonating] = useState(() => !!localStorage.getItem('impersonatingFrom'));
 
   useEffect(() => {
+    // Safety guard: ensure loading state never hangs indefinitely on mobile
+    const watchdog = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(watchdog);
+  }, []);
+
+  useEffect(() => {
     const verifyUser = async () => {
       if (token) {
         try {

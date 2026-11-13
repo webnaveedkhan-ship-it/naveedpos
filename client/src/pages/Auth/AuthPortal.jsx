@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import Modal from '../../components/common/Modal';
@@ -25,7 +25,6 @@ import {
   Building2,
   CreditCard,
   Activity,
-  ArrowLeft,
 } from 'lucide-react';
 
 // Pakistani Phone Formatter (03XX-XXXXXXX)
@@ -60,7 +59,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     }
   }, [isAuthenticated, isSuperAdmin, isImpersonating, navigate]);
 
-  // Determine if this is the private Super Admin portal
+  // Determine route context
   const isSuperAdminPath =
     isPrivateAdminRoute ||
     location.pathname === '/super-admin-login' ||
@@ -68,37 +67,67 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     location.pathname === '/admin-portal' ||
     defaultTab === 'superadmin';
 
+  const isSignUpPath =
+    location.pathname === '/signup' ||
+    location.pathname === '/free-trial' ||
+    defaultTab === 'signup';
+
+  // Persistent Owner Mode unlock state (for the owner: Naveed)
+  const [isOwnerUnlocked, setIsOwnerUnlocked] = useState(() => {
+    try {
+      return (
+        isSuperAdminPath ||
+        localStorage.getItem('naveedpos_owner_mode') === 'true'
+      );
+    } catch {
+      return isSuperAdminPath;
+    }
+  });
+
   // Active tab state: 'superadmin' | 'login' | 'signup'
-  const isSignUpRoute = location.pathname === '/signup' || defaultTab === 'signup';
-  const [activeTab, setActiveTab] = useState(
-    isSuperAdminPath ? 'superadmin' : isSignUpRoute ? 'signup' : 'login'
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    if (isSuperAdminPath) return 'superadmin';
+    if (isSignUpPath) return 'signup';
+    return 'login';
+  });
 
   // Form Fields State
-  const [identifier, setIdentifier] = useState(
-    isSuperAdminPath ? 'naveed@naveedpos.com' : 'admin@naveedpos.com'
-  );
-  const [password, setPassword] = useState(
-    isSuperAdminPath ? 'Naveed@POS2026!' : 'admin123'
-  );
+  const [identifier, setIdentifier] = useState(() => {
+    if (isSuperAdminPath) return 'naveed@naveedpos.com';
+    return 'admin@naveedpos.com';
+  });
+  const [password, setPassword] = useState(() => {
+    if (isSuperAdminPath) return 'Naveed@POS2026!';
+    return 'admin123';
+  });
   const [shopName, setShopName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+
+  // Dynamic Owner Detection:
+  // Option 1 (Super Admin) is ONLY revealed to the owner (naveed@naveedpos.com, admin@naveedpos.com,
+  // or when typing 'naveed'), or when visiting the private admin URL, or when unlocked via the discreet key.
+  // It is NEVER shown to regular store visitors or public guests.
+  const isOwnerDetected =
+    isSuperAdminPath ||
+    isOwnerUnlocked ||
+    identifier.toLowerCase().includes('naveed') ||
+    identifier.toLowerCase() === 'admin@naveedpos.com';
+
+  // Persist owner mode if detected
+  useEffect(() => {
+    if (isOwnerDetected) {
+      try {
+        localStorage.setItem('naveedpos_owner_mode', 'true');
+      } catch (e) {}
+    }
+  }, [isOwnerDetected]);
 
   // UI States
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [subscriptionError, setSubscriptionError] = useState('');
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
-
-  // Strict zero-scroll enforcement: Lock body scroll on auth screen
-  useEffect(() => {
-    const origOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = origOverflow;
-    };
-  }, []);
 
   // Sync tab with URL path changes
   useEffect(() => {
@@ -109,13 +138,14 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       defaultTab === 'superadmin'
     ) {
       setActiveTab('superadmin');
-      setIdentifier('naveed@naveedpos.com');
-      setPassword('Naveed@POS2026!');
-    } else if (location.pathname === '/signup') {
+      setIsOwnerUnlocked(true);
+      if (!identifier || identifier === 'admin@naveedpos.com') {
+        setIdentifier('naveed@naveedpos.com');
+        setPassword('Naveed@POS2026!');
+      }
+    } else if (location.pathname === '/signup' || location.pathname === '/free-trial') {
       setActiveTab('signup');
-      setIdentifier('');
-      setPassword('');
-    } else if (location.pathname === '/login') {
+    } else if (location.pathname === '/login' || location.pathname === '/store-login') {
       setActiveTab('login');
       if (identifier === 'naveed@naveedpos.com') {
         setIdentifier('admin@naveedpos.com');
@@ -129,19 +159,26 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     setErrorMsg('');
     setSubscriptionError('');
     if (tab === 'superadmin') {
+      setIsOwnerUnlocked(true);
+      try {
+        localStorage.setItem('naveedpos_owner_mode', 'true');
+      } catch (e) {}
       setIdentifier('naveed@naveedpos.com');
       setPassword('Naveed@POS2026!');
       navigate('/super-admin-login', { replace: true });
     } else if (tab === 'signup') {
-      setIdentifier('');
-      setPassword('');
-      navigate('/signup', { replace: true });
+      if (identifier === 'naveed@naveedpos.com') {
+        setIdentifier('');
+        setPassword('');
+      }
+      navigate('/free-trial', { replace: true });
     } else {
+      // Store Admin (Store Login)
       if (identifier === 'naveed@naveedpos.com') {
         setIdentifier('admin@naveedpos.com');
         setPassword('admin123');
       }
-      navigate('/login', { replace: true });
+      navigate('/store-login', { replace: true });
     }
   };
 
@@ -172,11 +209,8 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
         const isMasterSuperAdmin =
           role === 'SUPER_ADMIN' ||
           role === 'SUPERADMIN' ||
-          role === 'ADMIN' ||
           email === 'naveed@naveedpos.com' ||
-          email === 'admin@naveedpos.com' ||
-          email.includes('naveed') ||
-          activeTab === 'superadmin';
+          (activeTab === 'superadmin' && (email.includes('naveed') || role.includes('ADMIN')));
 
         if (isMasterSuperAdmin) {
           navigate('/super-admin', { replace: true });
@@ -264,7 +298,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   };
 
   return (
-    <div className="h-screen max-h-screen h-[100dvh] w-full overflow-hidden flex flex-col justify-between bg-slate-50 dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 transition-colors duration-200 select-none p-3 sm:p-5 lg:p-6 relative">
+    <div className="min-h-screen min-h-[100dvh] w-full overflow-y-auto flex flex-col justify-between bg-slate-50 dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 transition-colors duration-200 select-none p-3 sm:p-5 lg:p-6 relative">
       {/* Dynamic Ambient Glow Gradients (Dark Mode) */}
       <div className="hidden dark:block absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[#1C2541]/40 via-cyan-950/20 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="hidden dark:block absolute bottom-0 right-10 w-[450px] h-[450px] bg-gradient-to-tl from-[#0A1128]/70 via-emerald-950/20 to-transparent rounded-full blur-3xl pointer-events-none" />
@@ -471,60 +505,93 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
           {/* Right Column: Clean Compact Card (No Overflow) */}
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
             <div className="bg-white/95 dark:bg-[#1C2541]/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
-              {/* If on private Super Admin route, show Super Admin header banner instead of public tabs */}
-              {activeTab === 'superadmin' ? (
-                <div className="mb-4 pb-3 border-b border-indigo-100 dark:border-indigo-950 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white">
-                        Super Admin Access
-                      </h3>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                        Platform Owner Master Gateway
-                      </p>
-                    </div>
-                  </div>
-
+              {/* ------------------------------------------------------------- */}
+              {/* TOP SEGMENTED SWITCHER: [ Super Admin ] | [ Store Admin ] | [ Free Trial ] */}
+              {/* Super Admin option is ONLY displayed when owner is identified */}
+              {/* ------------------------------------------------------------- */}
+              <div
+                className={`grid ${
+                  isOwnerDetected ? 'grid-cols-3' : 'grid-cols-2'
+                } p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-3.5 transition-all duration-300 gap-1`}
+              >
+                {/* 1. SUPER ADMIN TAB - Only visible if owner detected */}
+                {isOwnerDetected && (
                   <button
                     type="button"
-                    onClick={() => handleTabChange('login')}
-                    className="text-[11px] font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center space-x-1"
+                    onClick={() => handleTabChange('superadmin')}
+                    className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                      activeTab === 'superadmin'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20'
+                        : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200 hover:bg-indigo-500/10'
+                    }`}
+                    title="Platform Owner Console (/super-admin-login)"
                   >
-                    <ArrowLeft className="w-3 h-3" />
-                    <span>Store Login</span>
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">Super Admin</span>
                   </button>
+                )}
+
+                {/* 2. STORE ADMIN TAB - Visible to Everyone */}
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('login')}
+                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                    activeTab === 'login'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                  }`}
+                  title="Store POS & Counter Login (/store-login)"
+                >
+                  <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="truncate">Store Admin</span>
+                </button>
+
+                {/* 3. FREE TRIAL TAB - Visible to Everyone */}
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('signup')}
+                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                    activeTab === 'signup'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                  }`}
+                  title="14-Day Free Store Trial (/free-trial)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-amber-500 dark:text-amber-300" />
+                  <span className="truncate">Free Trial</span>
+                </button>
+              </div>
+
+              {/* Context / URL Indicator Badge */}
+              {activeTab === 'superadmin' ? (
+                <div className="mb-3 p-2 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/40 flex items-center justify-between text-xs text-indigo-700 dark:text-indigo-300">
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <ShieldCheck className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                    <span className="text-[11px] font-bold truncate">Platform Owner Gateway</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-indigo-500/10 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400">
+                    /super-admin-login
+                  </span>
+                </div>
+              ) : activeTab === 'login' ? (
+                <div className="mb-3 p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <Store className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <span className="text-[11px] font-bold truncate">Retail Store &amp; POS Counter</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400">
+                    /store-login
+                  </span>
                 </div>
               ) : (
-                /* Public Dual Tabs: [ Store Login ] and [ Start Free Trial ] */
-                <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-xl border border-slate-200 dark:border-slate-700/80 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange('login')}
-                    className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                      activeTab === 'login'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Store className="w-3.5 h-3.5" />
-                    <span>Store Login</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange('signup')}
-                    className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center space-x-1.5 ${
-                      activeTab === 'signup'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" />
-                    <span>Start Free Trial</span>
-                  </button>
+                <div className="mb-3 p-2 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <Sparkles className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <span className="text-[11px] font-bold truncate">Instant 14-Day Free Store Trial</span>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-emerald-600 dark:text-emerald-400">
+                    /free-trial
+                  </span>
                 </div>
               )}
 
@@ -576,7 +643,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="naveed@naveedpos.com"
                         required
                         autoComplete="username"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -597,12 +664,12 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="••••••••"
                         required
                         autoComplete="current-password"
-                        className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none min-h-[44px]"
                         tabIndex="-1"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -614,7 +681,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-500/25 active:scale-[0.99] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-tap"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-500/25 active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-h-[44px]"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -632,7 +699,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     type="button"
                     onClick={() => handleLoginSubmit(null, 'naveed@naveedpos.com', 'Naveed@POS2026!')}
                     disabled={isLoading}
-                    className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5"
+                    className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5 min-h-[40px] active:scale-[0.98]"
                   >
                     <Zap className="w-3.5 h-3.5 text-amber-500" />
                     <span>⚡ 1-Click Master Access</span>
@@ -659,7 +726,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="owner@myshop.com or 03XX-XXXXXXX"
                         required
                         autoComplete="username"
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -689,12 +756,12 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="••••••••"
                         required
                         autoComplete="current-password"
-                        className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none min-h-[44px]"
                         tabIndex="-1"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -715,20 +782,32 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     </label>
                   </div>
 
-                  {/* Full-Width CTA: Login to Store */}
+                  {/* Full-Width CTA 1: Login to Store */}
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.99] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-tap"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-h-[44px]"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
+                        <Store className="w-4 h-4" />
                         <span>Login to Store</span>
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                       </>
                     )}
+                  </button>
+
+                  {/* Full-Width CTA 2: 1-Click Store Demo */}
+                  <button
+                    type="button"
+                    onClick={() => handleLoginSubmit(null, 'admin@naveedpos.com', 'admin123')}
+                    disabled={isLoading}
+                    className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5 min-h-[40px] active:scale-[0.98]"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>⚡ 1-Click Store Demo</span>
                   </button>
                 </form>
               ) : (
@@ -751,7 +830,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         onChange={(e) => setShopName(e.target.value)}
                         placeholder="e.g. Al Madina Supermart"
                         required
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -774,7 +853,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         }}
                         placeholder="owner@myshop.com or 0300-1234567"
                         required
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -795,12 +874,12 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="Minimum 6 characters"
                         required
                         autoComplete="new-password"
-                        className="w-full pl-9 pr-10 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none min-h-[44px]"
                         tabIndex="-1"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -812,14 +891,14 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.99] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-tap"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-h-[44px]"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
                         <Rocket className="w-4 h-4" />
-                        <span>Create My Store</span>
+                        <span>Create My Store (14-Day Free Trial)</span>
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                       </>
                     )}
@@ -834,17 +913,24 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       {/* ------------------------------------------------------------- */}
       {/* 3. MINIMAL FOOTER STRIP                                       */}
       {/* ------------------------------------------------------------- */}
-      <footer className="h-8 w-full max-w-6xl mx-auto flex items-center justify-between px-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800/80 z-10 flex-shrink-0">
+      <footer className="h-9 w-full max-w-6xl mx-auto flex items-center justify-between px-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800/80 z-10 flex-shrink-0">
         <p>&copy; 2026 NaveedPOS • Built for Pakistani Retailers &amp; Marts</p>
 
         {/* Discreet Owner Gateway Trigger */}
-        <Link
-          to={activeTab === 'superadmin' ? '/login' : '/super-admin-login'}
-          className="inline-flex items-center text-slate-400 hover:text-indigo-500 transition opacity-30 hover:opacity-100"
-          title={activeTab === 'superadmin' ? 'Store Merchant Login' : 'Platform Administration'}
+        <button
+          type="button"
+          onClick={() => {
+            setIsOwnerUnlocked(true);
+            try {
+              localStorage.setItem('naveedpos_owner_mode', 'true');
+            } catch (e) {}
+            handleTabChange('superadmin');
+          }}
+          className="inline-flex items-center text-slate-400 hover:text-indigo-500 transition opacity-40 hover:opacity-100 p-1 min-h-[36px] min-w-[36px] justify-center active:scale-95"
+          title="Platform Owner Console"
         >
-          <Lock className="w-3 h-3" />
-        </Link>
+          <Lock className="w-3.5 h-3.5" />
+        </button>
       </footer>
 
       {/* Forgot Password Modal */}

@@ -51,7 +51,7 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
     if (requireSuperAdmin) {
       return <Navigate to="/super-admin-login" state={{ from: location }} replace />;
     }
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/store-login" state={{ from: location }} replace />;
   }
 
   const effectiveRole = (effectiveUser?.role || '').toUpperCase();
@@ -242,10 +242,12 @@ function App() {
         <CartProvider>
           <Routes>
             <Route path="/login" element={<LoginPage defaultTab="login" />} />
+            <Route path="/store-login" element={<LoginPage defaultTab="login" />} />
             <Route path="/super-admin-login" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
             <Route path="/superadmin" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
             <Route path="/admin-portal" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
             <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/free-trial" element={<SignUpPage />} />
             <Route path="/auth" element={<LoginPage defaultTab="login" />} />
             <Route
               path="/*"
