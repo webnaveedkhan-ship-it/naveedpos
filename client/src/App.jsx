@@ -56,14 +56,12 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
 
   const effectiveRole = (effectiveUser?.role || '').toUpperCase();
   const effectiveEmail = (effectiveUser?.email || '').toLowerCase();
+  // Role Guard: Only true platform super admins are recognized as Super Admin
   const effectiveIsSuperAdmin =
     isSuperAdmin ||
     effectiveRole === 'SUPER_ADMIN' ||
     effectiveRole === 'SUPERADMIN' ||
-    effectiveRole === 'ADMIN' ||
-    effectiveEmail === 'naveed@naveedpos.com' ||
-    effectiveEmail === 'admin@naveedpos.com' ||
-    effectiveEmail.includes('naveed');
+    effectiveEmail === 'naveed@naveedpos.com';
 
   if (requireSuperAdmin && !effectiveIsSuperAdmin) {
     return <Navigate to="/dashboard" replace />;
@@ -224,6 +222,7 @@ const AppLayout = () => {
               <Route path="/users" element={<Navigate to="/staff" replace />} />
               <Route path="/settings" element={<Navigate to="/settings/billing" replace />} />
               <Route path="/billing" element={<Navigate to="/settings/billing" replace />} />
+              <Route path="/naveedpos" element={<Navigate to={defaultRoute} replace />} />
               <Route path="/" element={<Navigate to={defaultRoute} replace />} />
               <Route path="*" element={<Navigate to={defaultRoute} replace />} />
             </Routes>

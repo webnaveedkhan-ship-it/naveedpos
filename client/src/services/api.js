@@ -108,14 +108,12 @@ export const authService = {
     } catch {
       const rawId = (credentials.email || credentials.identifier || credentials.phone || '').trim().toLowerCase();
       const rawPass = (credentials.password || '').trim();
+      // Strict role isolation: Super Admin is ONLY the platform owner (naveed@naveedpos.com) or superadmin master key.
+      // Store owners, retail managers, and demo stores must NEVER be classified as Super Admin!
       const isSuperAdmin =
         rawId === 'naveed@naveedpos.com' ||
-        rawId === 'admin@naveedpos.com' ||
-        rawId === 'superadmin' ||
-        rawId === 'admin' ||
-        rawId === 'naveed' ||
-        rawId.includes('naveed') ||
-        rawId.includes('superadmin');
+        rawId === 'superadmin@naveedpos.com' ||
+        (rawId === 'superadmin' && (rawPass === 'Naveed@POS2026!' || rawPass === 'NaveedAdmin2026'));
 
       if (isSuperAdmin) {
         // Enforce specific Super Admin master passwords
@@ -131,8 +129,7 @@ export const authService = {
         ];
         const isMasterPassValid =
           validMasterPasswords.includes(rawPass) ||
-          rawId === 'naveed@naveedpos.com' ||
-          rawId === 'admin@naveedpos.com';
+          rawId === 'naveed@naveedpos.com';
 
         if (!isMasterPassValid) {
           const err = new Error('Invalid Super Admin credentials');

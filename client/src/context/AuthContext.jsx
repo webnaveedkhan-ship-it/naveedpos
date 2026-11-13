@@ -49,8 +49,7 @@ export const AuthProvider = ({ children }) => {
             const isSavedSuperAdmin =
               savedUser?.role === 'SUPER_ADMIN' ||
               savedUser?.role === 'SUPERADMIN' ||
-              savedUser?.email?.toLowerCase() === 'naveed@naveedpos.com' ||
-              savedUser?.email?.toLowerCase().includes('naveed');
+              savedUser?.email?.toLowerCase() === 'naveed@naveedpos.com';
 
             const nextUser = isSavedSuperAdmin
               ? {
@@ -172,13 +171,12 @@ export const AuthProvider = ({ children }) => {
 
   const userRole = (user?.role || '').toUpperCase();
   const userEmail = (user?.email || '').toLowerCase();
+  // Role Guard: SUPER_ADMIN is exclusively the platform owner (naveed@naveedpos.com) or SUPER_ADMIN role.
+  // Store owners, retail managers, and cashiers are never treated as Super Admin.
   const isSuperAdmin =
     userRole === 'SUPER_ADMIN' ||
     userRole === 'SUPERADMIN' ||
-    userRole === 'ADMIN' ||
-    userEmail === 'naveed@naveedpos.com' ||
-    userEmail === 'admin@naveedpos.com' ||
-    userEmail.includes('naveed');
+    userEmail === 'naveed@naveedpos.com';
   const isStoreAdmin = true;
   const isCashier = true;
   const tenantPlan = user?.tenantPlan || (isSuperAdmin ? 'premium' : 'trial');

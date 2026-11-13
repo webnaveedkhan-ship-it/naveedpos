@@ -94,7 +94,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   // Form Fields State
   const [identifier, setIdentifier] = useState(() => {
     if (isSuperAdminPath) return 'naveed@naveedpos.com';
-    return 'admin@naveedpos.com';
+    return 'store@naveedpos.com';
   });
   const [password, setPassword] = useState(() => {
     if (isSuperAdminPath) return 'Naveed@POS2026!';
@@ -105,14 +105,13 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   const [rememberMe, setRememberMe] = useState(true);
 
   // Dynamic Owner Detection:
-  // Option 1 (Super Admin) is ONLY revealed to the owner (naveed@naveedpos.com, admin@naveedpos.com,
-  // or when typing 'naveed'), or when visiting the private admin URL, or when unlocked via the discreet key.
+  // Option 1 (Super Admin) is ONLY revealed to the owner (naveed@naveedpos.com),
+  // or when visiting the private admin URL, or when unlocked via the discreet key.
   // It is NEVER shown to regular store visitors or public guests.
   const isOwnerDetected =
     isSuperAdminPath ||
     isOwnerUnlocked ||
-    identifier.toLowerCase().includes('naveed') ||
-    identifier.toLowerCase() === 'admin@naveedpos.com';
+    identifier.trim().toLowerCase() === 'naveed@naveedpos.com';
 
   // Persist owner mode if detected
   useEffect(() => {
@@ -139,7 +138,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     ) {
       setActiveTab('superadmin');
       setIsOwnerUnlocked(true);
-      if (!identifier || identifier === 'admin@naveedpos.com') {
+      if (!identifier || identifier === 'store@naveedpos.com' || identifier === 'admin@naveedpos.com') {
         setIdentifier('naveed@naveedpos.com');
         setPassword('Naveed@POS2026!');
       }
@@ -148,7 +147,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     } else if (location.pathname === '/login' || location.pathname === '/store-login') {
       setActiveTab('login');
       if (identifier === 'naveed@naveedpos.com') {
-        setIdentifier('admin@naveedpos.com');
+        setIdentifier('store@naveedpos.com');
         setPassword('admin123');
       }
     }
@@ -167,7 +166,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       setPassword('Naveed@POS2026!');
       navigate('/super-admin-login', { replace: true });
     } else if (tab === 'signup') {
-      if (identifier === 'naveed@naveedpos.com') {
+      if (identifier === 'naveed@naveedpos.com' || identifier === 'store@naveedpos.com') {
         setIdentifier('');
         setPassword('');
       }
@@ -175,7 +174,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     } else {
       // Store Admin (Store Login)
       if (identifier === 'naveed@naveedpos.com') {
-        setIdentifier('admin@naveedpos.com');
+        setIdentifier('store@naveedpos.com');
         setPassword('admin123');
       }
       navigate('/store-login', { replace: true });
@@ -209,8 +208,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
         const isMasterSuperAdmin =
           role === 'SUPER_ADMIN' ||
           role === 'SUPERADMIN' ||
-          email === 'naveed@naveedpos.com' ||
-          (activeTab === 'superadmin' && (email.includes('naveed') || role.includes('ADMIN')));
+          (activeTab === 'superadmin' && email === 'naveed@naveedpos.com');
 
         if (isMasterSuperAdmin) {
           navigate('/super-admin', { replace: true });
@@ -802,7 +800,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   {/* Full-Width CTA 2: 1-Click Store Demo */}
                   <button
                     type="button"
-                    onClick={() => handleLoginSubmit(null, 'admin@naveedpos.com', 'admin123')}
+                    onClick={() => handleLoginSubmit(null, 'store@naveedpos.com', 'admin123')}
                     disabled={isLoading}
                     className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5 min-h-[40px] active:scale-[0.98]"
                   >
