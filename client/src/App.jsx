@@ -18,6 +18,8 @@ import ReportsPage from './pages/ReportsPage';
 import ExpensesPage from './pages/ExpensesPage';
 import SuppliersPage from './pages/SuppliersPage';
 import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
+import StaffPage from './pages/StaffPage';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false }) => {
@@ -26,9 +28,11 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-900 text-white">
-        <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin mr-3" />
-        <span className="text-sm font-semibold">Initializing NaveedPOS...</span>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
+        <div className="w-9 h-9 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <span className="text-xs font-bold tracking-wider uppercase text-slate-500 dark:text-slate-400">
+          Loading NaveedPOS...
+        </span>
       </div>
     );
   }
@@ -76,7 +80,9 @@ const ProtectedRoute = ({ children, requireSuperAdmin = false, storeOnly = false
 
 // Main App Layout
 const AppLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth >= 1024 : false;
+  });
   const { isSuperAdmin, isImpersonating } = useAuth();
 
   const defaultRoute = isSuperAdmin && !isImpersonating ? '/super-admin' : '/dashboard';
@@ -84,115 +90,127 @@ const AppLayout = () => {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
       <Navbar
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         isSidebarOpen={isSidebarOpen}
       />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
         <main className="flex-1 flex flex-col overflow-hidden relative pb-16 md:pb-0">
-          <Routes>
-            <Route
-              path="/super-admin"
-              element={
-                <ProtectedRoute requireSuperAdmin>
-                  <SuperAdminPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/super-admin/:tab"
-              element={
-                <ProtectedRoute requireSuperAdmin>
-                  <SuperAdminPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute storeOnly>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/pos"
-              element={
-                <ProtectedRoute storeOnly>
-                  <PosPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute storeOnly>
-                  <InventoryPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products/barcode-generator"
-              element={
-                <ProtectedRoute storeOnly>
-                  <BarcodeGeneratorPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/barcode-generator" element={<Navigate to="/products/barcode-generator" replace />} />
-            <Route path="/inventory" element={<Navigate to="/products" replace />} />
-            <Route
-              path="/khata"
-              element={
-                <ProtectedRoute storeOnly>
-                  <KhataPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/orders"
-              element={
-                <ProtectedRoute storeOnly>
-                  <OrdersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/expenses"
-              element={
-                <ProtectedRoute storeOnly>
-                  <ExpensesPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/suppliers"
-              element={
-                <ProtectedRoute storeOnly>
-                  <SuppliersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute storeOnly>
-                  <ReportsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings/billing"
-              element={
-                <ProtectedRoute storeOnly>
-                  <BillingPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/billing" element={<Navigate to="/settings/billing" replace />} />
-            <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-            <Route path="*" element={<Navigate to={defaultRoute} replace />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route
+                path="/super-admin"
+                element={
+                  <ProtectedRoute requireSuperAdmin>
+                    <SuperAdminPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/super-admin/:tab"
+                element={
+                  <ProtectedRoute requireSuperAdmin>
+                    <SuperAdminPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <DashboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/pos"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <PosPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <InventoryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products/barcode-generator"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <BarcodeGeneratorPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/barcode-generator" element={<Navigate to="/products/barcode-generator" replace />} />
+              <Route path="/inventory" element={<Navigate to="/products" replace />} />
+              <Route
+                path="/khata"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <KhataPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <OrdersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/expenses"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <ExpensesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/suppliers"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <SuppliersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <ReportsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings/billing"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <BillingPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/staff"
+                element={
+                  <ProtectedRoute storeOnly>
+                    <StaffPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/users" element={<Navigate to="/staff" replace />} />
+              <Route path="/settings" element={<Navigate to="/settings/billing" replace />} />
+              <Route path="/billing" element={<Navigate to="/settings/billing" replace />} />
+              <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+              <Route path="*" element={<Navigate to={defaultRoute} replace />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
       </div>
       <MobileBottomNav />
@@ -202,26 +220,28 @@ const AppLayout = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage defaultTab="login" />} />
-          <Route path="/super-admin-login" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
-          <Route path="/superadmin" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
-          <Route path="/admin-portal" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
-          <Route path="/signup" element={<SignUpPage />} />
-          <Route path="/auth" element={<LoginPage defaultTab="login" />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </CartProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CartProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage defaultTab="login" />} />
+            <Route path="/super-admin-login" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
+            <Route path="/superadmin" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
+            <Route path="/admin-portal" element={<LoginPage defaultTab="superadmin" isPrivateAdminRoute={true} />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/auth" element={<LoginPage defaultTab="login" />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

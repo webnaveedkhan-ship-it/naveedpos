@@ -276,6 +276,46 @@ async function handleApi(request, url) {
     });
   }
 
+  // Reports: Visual Analytics
+  if (path.includes('/reports/visual-analytics') || path.includes('/reports/sales')) {
+    return jsonResponse({
+      success: true,
+      kpis: {
+        grossSales: 284500,
+        cogs: 198300,
+        netProfit: 86200,
+        profitMargin: 30.3,
+        marketUdhar: 18500,
+        totalOrders: 142,
+        averageOrderValue: 2003,
+      },
+      timelineChart: [
+        { timeLabel: '09:00', sales: 12000, profit: 3600, orders: 6 },
+        { timeLabel: '12:00', sales: 45000, profit: 13500, orders: 22 },
+        { timeLabel: '15:00', sales: 78000, profit: 23400, orders: 38 },
+        { timeLabel: '18:00', sales: 142000, profit: 42600, orders: 65 },
+        { timeLabel: '21:00', sales: 284500, profit: 86200, orders: 142 },
+      ],
+      paymentMethods: [
+        { method: 'CASH', label: 'Cash', amount: 185000, count: 98, percentage: 65, color: '#10b981' },
+        { method: 'JAZZCASH', label: 'JazzCash', amount: 54000, count: 26, percentage: 19, color: '#ef4444' },
+        { method: 'EASYPAISA', label: 'EasyPaisa', amount: 32000, count: 14, percentage: 11, color: '#22c55e' },
+        { method: 'CARD', label: 'Card / Bank', amount: 13500, count: 4, percentage: 5, color: '#3b82f6' },
+      ],
+      topProducts: [
+        { title: 'Artisan Cold Brew Coffee 330ml', salesQuantity: 45, totalSales: 20250, totalProfit: 6075 },
+        { title: 'Sparkling Mineral Water 500ml', salesQuantity: 38, totalSales: 4560, totalProfit: 1368 },
+        { title: 'Organic Green Tea 400ml', salesQuantity: 32, totalSales: 5760, totalProfit: 1728 },
+      ],
+      recentOrders: [
+        { _id: 'ord_1', orderNumber: 'ORD-2026-001', customerName: 'Tahir Mahmood', paymentMethod: 'CASH', itemsCount: 3, grandTotal: 1350, netProfit: 450, profitMargin: 33.3, createdAt: new Date().toISOString() },
+        { _id: 'ord_2', orderNumber: 'ORD-2026-002', customerName: 'Bilal Ahmad', paymentMethod: 'JAZZCASH', itemsCount: 2, grandTotal: 850, netProfit: 280, profitMargin: 32.9, createdAt: new Date(Date.now() - 3600000).toISOString() },
+      ],
+      periodLabel: 'Today',
+      dateRange: { formatted: 'Today' },
+    });
+  }
+
   // Super Admin Metrics & Stats
   if (path === '/super-admin/metrics' || path === '/super-admin/stats') {
     return jsonResponse({

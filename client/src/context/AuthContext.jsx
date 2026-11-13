@@ -13,7 +13,16 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    try {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      // If we already have a token and user in localStorage, don't block the UI with a full-screen loader
+      return !(savedToken && savedUser);
+    } catch {
+      return false;
+    }
+  });
   const [isImpersonating, setIsImpersonating] = useState(() => !!localStorage.getItem('impersonatingFrom'));
 
   useEffect(() => {

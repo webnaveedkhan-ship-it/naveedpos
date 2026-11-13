@@ -87,7 +87,7 @@ export default function BarcodeGeneratorPage() {
             setQueue(
               list.slice(0, 3).map((p) => ({
                 id: p._id,
-                name: p.name,
+                name: p.name || p.title || 'Product Item',
                 sku: p.barcode || p.sku || `SKU-${p._id?.slice(-6)}`,
                 price: p.price,
                 qty: 8,
@@ -110,7 +110,7 @@ export default function BarcodeGeneratorPage() {
     const q = searchTerm.toLowerCase();
     return products.filter(
       (p) =>
-        p.name?.toLowerCase().includes(q) ||
+        (p.name || p.title || '').toLowerCase().includes(q) ||
         p.sku?.toLowerCase().includes(q) ||
         p.barcode?.toLowerCase().includes(q)
     );
@@ -127,7 +127,7 @@ export default function BarcodeGeneratorPage() {
         ...queue,
         {
           id: product._id,
-          name: product.name,
+          name: product.name || product.title || 'Product Item',
           sku: product.barcode || product.sku || `SKU-${product._id?.slice(-6)}`,
           price: product.price,
           qty: 6,

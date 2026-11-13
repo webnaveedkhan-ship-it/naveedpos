@@ -109,17 +109,29 @@ const ReceiptModal = ({ isOpen, onClose, order }) => {
 
           {/* Item Rows */}
           <div className="py-1 space-y-1">
-            {order.items?.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-start text-[11px]">
-                <div className="w-5/12 pr-1">
-                  <div className="font-semibold leading-tight line-clamp-1">{item.title}</div>
-                  <div className="text-[9px] text-neutral-600">{item.sku}</div>
+            {order.items && order.items.length > 0 ? (
+              order.items.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-start text-[11px]">
+                  <div className="w-5/12 pr-1">
+                    <div className="font-semibold leading-tight line-clamp-1">{item.title}</div>
+                    <div className="text-[9px] text-neutral-600">{item.sku}</div>
+                  </div>
+                  <div className="w-2/12 text-center">{item.quantity}</div>
+                  <div className="w-2/12 text-right">{item.price}</div>
+                  <div className="w-3/12 text-right font-bold">{item.subtotal}</div>
                 </div>
-                <div className="w-2/12 text-center">{item.quantity}</div>
-                <div className="w-2/12 text-right">{item.price}</div>
-                <div className="w-3/12 text-right font-bold">{item.subtotal}</div>
+              ))
+            ) : (
+              <div className="flex justify-between items-start text-[11px]">
+                <div className="w-5/12 pr-1">
+                  <div className="font-semibold leading-tight line-clamp-1">Retail Store Order</div>
+                  <div className="text-[9px] text-neutral-600">{order.orderNumber}</div>
+                </div>
+                <div className="w-2/12 text-center">{order.itemsCount || 1}</div>
+                <div className="w-2/12 text-right">{order.grandTotal}</div>
+                <div className="w-3/12 text-right font-bold">{order.grandTotal}</div>
               </div>
-            ))}
+            )}
           </div>
 
           {/* Divider */}

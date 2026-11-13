@@ -217,7 +217,9 @@ const OrdersPage = () => {
 
                     {/* Items */}
                     <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
-                      {ord.items?.reduce((sum, i) => sum + i.quantity, 0)} units ({ord.items?.length} sku)
+                      {ord.items && ord.items.length > 0
+                        ? `${ord.items.reduce((sum, i) => sum + (Number(i.quantity) || 1), 0)} units (${ord.items.length} sku)`
+                        : `${ord.itemsCount || 1} items`}
                     </td>
 
                     {/* Payment Method */}
