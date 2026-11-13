@@ -25,6 +25,7 @@ import {
   Shield,
   HelpCircle,
   Store,
+  Menu,
 } from 'lucide-react';
 
 const MobileBottomNav = () => {
@@ -220,21 +221,21 @@ const MobileBottomNav = () => {
               <span className="text-[10px] mt-0.5 font-medium tracking-tight">Reports</span>
             </NavLink>
 
-            {/* 5. More Actions Sheet Trigger */}
+            {/* 5. Menu / More Actions Sheet Trigger */}
             <button
               type="button"
               onClick={() => setIsMoreOpen(true)}
               className="flex-1 flex flex-col items-center justify-center py-1 min-tap text-slate-400 hover:text-slate-200 transition-colors"
             >
-              <MoreHorizontal className="w-5 h-5" />
-              <span className="text-[10px] mt-0.5 font-medium tracking-tight">More</span>
+              <Menu className="w-5 h-5 text-slate-300" />
+              <span className="text-[10px] mt-0.5 font-medium tracking-tight">Menu</span>
             </button>
           </>
         )}
       </nav>
 
       {/* ------------------------------------------------------------- */}
-      {/* MERCHANT "MORE" SLIDE-UP BOTTOM SHEET                         */}
+      {/* MERCHANT "MORE / MENU" SLIDE-UP BOTTOM SHEET                 */}
       {/* ------------------------------------------------------------- */}
       <MobileBottomSheet
         isOpen={isMoreOpen}
@@ -243,6 +244,27 @@ const MobileBottomNav = () => {
         subtitle="Quick access to all retail modules & settings"
       >
         <div className="space-y-4">
+          {/* Direct Sidebar Drawer Launcher */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsMoreOpen(false);
+              window.dispatchEvent(new CustomEvent('open-sidebar'));
+            }}
+            className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-600/25 to-brand-600/25 border border-emerald-500/40 text-left hover:bg-emerald-600/35 transition flex items-center justify-between shadow-xs active:scale-[0.98]"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-slate-950 font-black shadow-xs">
+                <Menu className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs font-black text-white">Full Sidebar Navigation</div>
+                <div className="text-[10px] text-emerald-300 font-medium">Open full slide-over drawer with all icons</div>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-emerald-400" />
+          </button>
+
           {/* Active Impersonation Exit Banner */}
           {isImpersonating && (
             <div className="p-3 bg-amber-950/60 border border-amber-600/60 rounded-2xl flex items-center justify-between">

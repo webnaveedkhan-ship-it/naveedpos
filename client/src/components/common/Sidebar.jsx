@@ -50,6 +50,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/super-admin',
       label: 'Platform Telemetry',
       icon: Activity,
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
       badge: 'MRR',
       badgeColor: 'bg-emerald-600 text-white',
     },
@@ -57,6 +58,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/super-admin/tenants',
       label: 'Tenants Directory',
       icon: Building2,
+      iconColor: 'text-indigo-500 dark:text-indigo-400',
       badge: 'Shops',
       badgeColor: 'bg-indigo-600 text-white',
     },
@@ -64,6 +66,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/super-admin/payments',
       label: 'Payment Approvals',
       icon: CreditCard,
+      iconColor: 'text-amber-500 dark:text-amber-400',
       badge: 'Slips',
       badgeColor: 'bg-amber-500 text-slate-950 font-black',
     },
@@ -71,11 +74,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/super-admin/broadcast',
       label: 'System Broadcast',
       icon: Megaphone,
+      iconColor: 'text-blue-500 dark:text-blue-400',
     },
     {
       to: '/super-admin/audit',
       label: 'Security Audit Log',
       icon: ShieldAlert,
+      iconColor: 'text-rose-500 dark:text-rose-400',
     },
   ];
 
@@ -85,35 +90,41 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/dashboard',
       label: 'Store Dashboard',
       icon: LayoutDashboard,
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
     },
     {
       to: '/pos',
       label: 'POS Terminal',
       icon: ShoppingCart,
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
       badge: totalItemCount > 0 ? totalItemCount : null,
-      badgeColor: 'bg-brand-500 text-white',
+      badgeColor: 'bg-emerald-600 text-white',
     },
     {
       to: '/products',
       label: 'Products & Inventory',
       icon: Package,
+      iconColor: 'text-indigo-500 dark:text-indigo-400',
     },
     {
       to: '/products/barcode-generator',
       label: 'Barcode Generator',
       icon: Barcode,
+      iconColor: 'text-purple-500 dark:text-purple-400',
       badge: 'Print',
-      badgeColor: 'bg-indigo-600 text-white',
+      badgeColor: 'bg-purple-600 text-white',
     },
     {
       to: '/suppliers',
       label: 'Wholesale & Suppliers',
       icon: Truck,
+      iconColor: 'text-teal-500 dark:text-teal-400',
     },
     {
       to: '/expenses',
       label: 'Store Expenses',
       icon: Wallet,
+      iconColor: 'text-rose-500 dark:text-rose-400',
       badge: 'Daily',
       badgeColor: 'bg-rose-500 text-white',
     },
@@ -121,6 +132,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/khata',
       label: 'Khata Book (Udhar)',
       icon: BookOpen,
+      iconColor: 'text-amber-500 dark:text-amber-400',
       badge: 'Udhar',
       badgeColor: 'bg-amber-500 text-white',
     },
@@ -128,16 +140,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       to: '/orders',
       label: 'Orders & Receipts',
       icon: Receipt,
+      iconColor: 'text-blue-500 dark:text-blue-400',
     },
     {
       to: '/reports',
       label: 'Sales & Profit Reports',
       icon: BarChart3,
+      iconColor: 'text-violet-500 dark:text-violet-400',
     },
     {
       to: '/settings/billing',
       label: 'Store Subscription',
       icon: CreditCard,
+      iconColor: 'text-emerald-500 dark:text-emerald-400',
     },
   ];
 
@@ -155,7 +170,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       )}
 
       <aside
-        className={`no-print fixed lg:static inset-y-0 left-0 z-50 flex flex-col w-72 lg:w-auto bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-out ${
+        className={`no-print fixed lg:static inset-y-0 left-0 z-50 flex flex-col w-72 lg:w-auto bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-out h-full ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${isOpen ? 'lg:w-64' : 'lg:w-20'}`}
       >
@@ -195,7 +210,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         )}
 
         {/* Navigation Links */}
-        <div className="flex-1 py-3 px-3 space-y-1 overflow-y-auto">
+        <div className="flex-1 py-3 px-2 sm:px-3 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -209,34 +224,45 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   }
                 }}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2.5 rounded-xl text-sm font-semibold transition group relative active:scale-[0.97] min-h-[44px] ${
+                  `flex items-center rounded-xl text-sm font-semibold transition group relative active:scale-[0.97] min-h-[44px] ${
+                    isOpen ? 'px-3 py-2.5' : 'px-2 py-2.5 justify-center'
+                  } ${
                     isActive
-                      ? 'bg-brand-950/50 text-brand-400 border border-brand-800/40 shadow-xs font-bold'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-brand-600 text-white shadow-md shadow-brand-600/30 font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`
                 }
                 title={!isOpen ? item.label : undefined}
               >
-                <Icon
-                  className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${
-                    isOpen ? 'mr-3' : 'mx-auto lg:mx-auto'
-                  }`}
-                />
+                {({ isActive }) => (
+                  <>
+                    <Icon
+                      className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${
+                        isActive ? 'text-white' : item.iconColor || 'text-slate-500 dark:text-slate-400'
+                      } ${isOpen ? 'mr-3' : 'mx-auto'}`}
+                    />
 
-                <span className={`truncate ${isOpen ? 'inline' : 'inline lg:hidden'}`}>
-                  {item.label}
-                </span>
+                    <span className={`truncate font-medium ${isOpen ? 'inline' : 'inline lg:hidden'}`}>
+                      {item.label}
+                    </span>
 
-                {item.badge !== null && item.badge !== undefined && (
-                  <span
-                    className={`${
-                      item.badgeColor
-                    } text-xs font-bold px-2 py-0.5 rounded-full ${
-                      isOpen ? 'ml-auto' : 'ml-auto lg:absolute lg:top-1 lg:right-2'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
+                    {item.badge !== null && item.badge !== undefined && (
+                      isOpen ? (
+                        <span
+                          className={`${
+                            item.badgeColor
+                          } text-xs font-bold px-2 py-0.5 rounded-full ml-auto`}
+                        >
+                          {item.badge}
+                        </span>
+                      ) : (
+                        <span
+                          className="hidden lg:flex absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"
+                          title={`${item.label}: ${item.badge}`}
+                        />
+                      )
+                    )}
+                  </>
                 )}
               </NavLink>
             );

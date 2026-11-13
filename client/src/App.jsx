@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -85,6 +85,23 @@ const AppLayout = () => {
   });
   const { isSuperAdmin, isImpersonating } = useAuth();
 
+  // Listen for global custom events to open/toggle sidebar from any mobile button
+  useEffect(() => {
+    const handleToggle = () => setIsSidebarOpen((prev) => !prev);
+    const handleOpen = () => setIsSidebarOpen(true);
+    const handleClose = () => setIsSidebarOpen(false);
+
+    window.addEventListener('toggle-sidebar', handleToggle);
+    window.addEventListener('open-sidebar', handleOpen);
+    window.addEventListener('close-sidebar', handleClose);
+
+    return () => {
+      window.removeEventListener('toggle-sidebar', handleToggle);
+      window.removeEventListener('open-sidebar', handleOpen);
+      window.removeEventListener('close-sidebar', handleClose);
+    };
+  }, []);
+
   const defaultRoute = isSuperAdmin && !isImpersonating ? '/super-admin' : '/dashboard';
 
   return (
@@ -93,7 +110,7 @@ const AppLayout = () => {
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
         isSidebarOpen={isSidebarOpen}
       />
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-visible lg:overflow-hidden relative">
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
         <main className="flex-1 flex flex-col overflow-hidden relative pb-16 md:pb-0">
           <ErrorBoundary>
