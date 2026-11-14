@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { khataService } from '../services/api';
 import { formatCurrency, PAKISTANI_BANKNOTES } from '../utils/currency';
 import { useAuth } from '../context/AuthContext';
-import { getWhatsAppReminderUrl } from '../utils/whatsapp';
+import { getWhatsAppReminderUrl, getWhatsAppKhataReceiptUrl } from '../utils/whatsapp';
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
 import KhataReceiptModal from '../components/khata/KhataReceiptModal';
@@ -23,6 +23,12 @@ import {
   Lock,
   Receipt,
   Plus,
+  Clock,
+  Filter,
+  History,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 
 const KhataPage = () => {
@@ -33,6 +39,11 @@ const KhataPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [debtFilter, setDebtFilter] = useState('all'); // 'all', 'debtors', 'cleared'
+
+  // Main Khata System Tabs: 'accounts' | 'wasool' | 'udhar' | 'updates'
+  const [activeMainTab, setActiveMainTab] = useState('accounts');
+  const [txSearchTerm, setTxSearchTerm] = useState('');
+  const [txDateFilter, setTxDateFilter] = useState('all'); // 'all', 'today', 'yesterday', 'week'
 
   // Add Customer Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -289,8 +300,115 @@ const KhataPage = () => {
     }
   };
 
+  // All unified transactions across all customers
+  const allTransactions = useMemo(() => {
+    const list = [];
+    safeCustomers.forEach((c) => {
+      if (!c) return;
+      const txs = Array.isArray(c.transactions) ? c.transactions : [];
+      txs.forEach((tx) => {
+        if (!tx) return;
+        list.push({
+          ...tx,
+          customerId: c._id,
+          customerName: c.name || 'Valued Customer',
+          customerPhone: c.phone || '',
+          customerAddress: c.address || '',
+          currentCustomerDebt: Number(c.totalDebt ?? c.netBalance ?? 0),
+        });
+      });
+    });
+    return list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  }, [safeCustomers]);
+
+  const wasooliTransactions = useMemo(() => {
+    return allTransactions.filter(
+      (tx) => tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI'
+    );
+  }, [allTransactions]);
+
+  const udharTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => tx.type === 'UDHAR_GIVEN');
+  }, [allTransactions]);
+
+  // Transaction filter helper
+  const filterTransactions = (txList, search = '', dateFilter = 'all') => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    return txList.filter((tx) => {
+      if (!tx) return false;
+      const txDate = new Date(tx.date || 0);
+
+      // Date Filter
+      if (dateFilter === 'today') {
+        if (txDate < today) return false;
+      } else if (dateFilter === 'yesterday') {
+        if (txDate < yesterday || txDate >= today) return false;
+      } else if (dateFilter === 'week') {
+        if (txDate < weekAgo) return false;
+      }
+
+      // Search Filter
+      if (search && search.trim() !== '') {
+        const q = search.trim().toLowerCase();
+        const nameMatch = (tx.customerName || '').toLowerCase().includes(q);
+        const phoneMatch = (tx.customerPhone || '').includes(q);
+        const orderMatch = (tx.orderNumber || '').toLowerCase().includes(q);
+        const notesMatch = (tx.notes || '').toLowerCase().includes(q);
+        const methodMatch = (tx.paymentMethod || '').toLowerCase().includes(q);
+        if (!nameMatch && !phoneMatch && !orderMatch && !notesMatch && !methodMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  const filteredWasooliList = useMemo(() => {
+    return filterTransactions(wasooliTransactions, txSearchTerm, txDateFilter);
+  }, [wasooliTransactions, txSearchTerm, txDateFilter]);
+
+  const filteredUdharList = useMemo(() => {
+    return filterTransactions(udharTransactions, txSearchTerm, txDateFilter);
+  }, [udharTransactions, txSearchTerm, txDateFilter]);
+
+  const filteredUpdatesList = useMemo(() => {
+    return filterTransactions(allTransactions, txSearchTerm, txDateFilter);
+  }, [allTransactions, txSearchTerm, txDateFilter]);
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const todayWasooliCalc = useMemo(() => {
+    return wasooliTransactions
+      .filter((tx) => new Date(tx.date || 0) >= todayStart)
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [wasooliTransactions]);
+
+  const todayUdharCalc = useMemo(() => {
+    return udharTransactions
+      .filter((tx) => new Date(tx.date || 0) >= todayStart)
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [udharTransactions]);
+
+  const totalWasooliAllTime = useMemo(() => {
+    return wasooliTransactions.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [wasooliTransactions]);
+
+  const totalUdharAllTime = useMemo(() => {
+    return udharTransactions.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+  }, [udharTransactions]);
+
   const handleOpenTxReceipt = (tx) => {
-    if (!tx || !statementCustomer) return;
+    if (!tx) return;
     const isPayment = tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI';
     const txAmount = Number(tx.amount || 0);
     const balanceAfter = Number(tx.balanceAfter || 0);
@@ -302,8 +420,8 @@ const KhataPage = () => {
       type: tx.type,
       receiptNumber: tx.orderNumber || tx.receiptNumber || tx._id || `TX-${Date.now().toString().slice(-6)}`,
       date: tx.date || new Date().toISOString(),
-      customerName: statementCustomer.name,
-      customerPhone: statementCustomer.phone,
+      customerName: tx.customerName || statementCustomer?.name || 'Valued Customer',
+      customerPhone: tx.customerPhone || statementCustomer?.phone || '',
       amount: txAmount,
       paymentMethod: tx.paymentMethod || (isPayment ? 'CASH' : 'UDHAR_CREDIT'),
       previousDebt: prevDebt,
@@ -314,6 +432,35 @@ const KhataPage = () => {
       storeName: storeName,
     });
     setIsReceiptOpen(true);
+  };
+
+  const handleSendWhatsAppReceipt = (tx) => {
+    if (!tx) return;
+    const isPayment = tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI';
+    const txAmount = Number(tx.amount || 0);
+    const balanceAfter = Number(tx.balanceAfter || 0);
+    const prevDebt = isPayment
+      ? balanceAfter + txAmount
+      : Math.max(0, balanceAfter - txAmount);
+
+    const receiptObj = {
+      type: tx.type,
+      receiptNumber: tx.orderNumber || tx.receiptNumber || tx._id || `TX-${Date.now().toString().slice(-6)}`,
+      date: tx.date || new Date().toISOString(),
+      customerName: tx.customerName || statementCustomer?.name || 'Valued Customer',
+      customerPhone: tx.customerPhone || statementCustomer?.phone || '',
+      amount: txAmount,
+      paymentMethod: tx.paymentMethod || (isPayment ? 'CASH' : 'UDHAR_CREDIT'),
+      previousDebt: prevDebt,
+      balanceAfter: balanceAfter,
+      currentDebt: balanceAfter,
+      notes: tx.notes || (isPayment ? 'Wasooli Payment' : 'Udhar Given'),
+      orderNumber: tx.orderNumber,
+      storeName: storeName,
+    };
+
+    const url = getWhatsAppKhataReceiptUrl(receiptObj, storeName);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const parsedWasooliAmount = parseFloat(wasooliAmount) || 0;
@@ -391,29 +538,83 @@ const KhataPage = () => {
           subtitle="Total outstanding money in market"
         />
         <StatCard
-          title="Active Debtors"
-          value={metrics?.totalDebtorsCount ?? 0}
-          icon={Wallet}
-          color="amber"
-          subtitle="Customers owing money"
-        />
-        <StatCard
           title="Today's Wasooli"
-          value={formatCurrency(metrics?.todayWasooli ?? 0)}
+          value={formatCurrency(metrics?.todayWasooli || todayWasooliCalc || 0)}
           icon={ArrowDownLeft}
           color="brand"
-          subtitle="Cash/Online collections today"
+          subtitle="Cash & online collections today"
         />
         <StatCard
-          title="Total Khata Accounts"
-          value={metrics?.totalCustomers ?? metrics?.customerCount ?? safeCustomers.length}
-          icon={BookOpen}
+          title="Today's Udhar Given"
+          value={formatCurrency(metrics?.todayUdhar || todayUdharCalc || 0)}
+          icon={ArrowUpRight}
+          color="amber"
+          subtitle="Credit given to customers today"
+        />
+        <StatCard
+          title="Active Khata Debtors"
+          value={`${metrics?.totalDebtorsCount ?? 0} / ${safeCustomers.length}`}
+          icon={Wallet}
           color="blue"
-          subtitle="Registered credit customers"
+          subtitle="Customers currently owing money"
         />
       </div>
 
-      {/* Search and Filters Toolbar */}
+      {/* Khata System Main Navigation Tabs */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xs flex flex-wrap gap-1">
+        <button
+          onClick={() => setActiveMainTab('accounts')}
+          className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition min-tap ${
+            activeMainTab === 'accounts'
+              ? 'bg-brand-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Accounts Ledger ({safeCustomers.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveMainTab('wasool')}
+          className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition min-tap ${
+            activeMainTab === 'wasool'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <ArrowDownLeft className="w-4 h-4" />
+          <span>Wasool (وصولیاں) ({wasooliTransactions.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveMainTab('udhar')}
+          className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition min-tap ${
+            activeMainTab === 'udhar'
+              ? 'bg-rose-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <ArrowUpRight className="w-4 h-4" />
+          <span>Udhar (ادھار دیا) ({udharTransactions.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveMainTab('updates')}
+          className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl text-xs font-bold transition min-tap ${
+            activeMainTab === 'updates'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>Recent Updates Feed ({allTransactions.length})</span>
+        </button>
+      </div>
+
+      {/* TAB 1: ACCOUNTS LEDGER */}
+      {activeMainTab === 'accounts' && (
+        <>
+          {/* Search and Filters Toolbar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -742,6 +943,812 @@ const KhataPage = () => {
           </table>
         </div>
       </div>
+    </>
+  )}
+
+      {/* TAB 2: WASOOLI (PAYMENTS RECEIVED) */}
+      {activeMainTab === 'wasool' && (
+        <div className="space-y-4">
+          {/* Quick Header Banner */}
+          <div className="bg-gradient-to-r from-emerald-600/10 via-emerald-500/5 to-transparent border border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div>
+              <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
+                <ArrowDownLeft className="w-5 h-5" />
+                <span>Wasooli & Collections (رسید وصولی)</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Log of cash, JazzCash, EasyPaisa, and bank payments collected against customer udhar
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">Today's Wasool</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(todayWasooliCalc || metrics?.todayWasooli || 0)}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">All-Time Wasool</span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {formatCurrency(totalWasooliAllTime)}
+                </span>
+              </div>
+              <button
+                onClick={() => handleOpenWasooli(null)}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1 min-tap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Record Wasooli</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Date Filter Bar */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={txSearchTerm}
+                onChange={(e) => setTxSearchTerm(e.target.value)}
+                placeholder="Search wasooli by customer name, phone, or notes..."
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex items-center space-x-1.5 w-full sm:w-auto">
+              {[
+                { id: 'all', label: 'All Collections' },
+                { id: 'today', label: "Today's (آج)" },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: 'week', label: 'This Week' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTxDateFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    txDateFilter === tab.id
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Wasooli Records Directory: Mobile Cards (< md) + Desktop Table (md:) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+            {/* Mobile View */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredWasooliList.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 p-4 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                    <ArrowDownLeft className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs">No Wasooli payments found matching criteria.</p>
+                  <button
+                    onClick={() => handleOpenWasooli(null)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs inline-flex items-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Record First Wasooli</span>
+                  </button>
+                </div>
+              ) : (
+                filteredWasooliList.map((tx) => (
+                  <div key={tx._id} className="p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                          {tx.customerName}
+                        </h4>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">
+                          {tx.customerPhone || 'No phone'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                          +{formatCurrency(tx.amount)}
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          Baqaya: {formatCurrency(tx.balanceAfter)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {tx.paymentMethod ? tx.paymentMethod.replace('_', ' ') : 'Cash in Hand'}
+                      </span>
+                      <span className="text-[11px] text-slate-400">
+                        {new Date(tx.date).toLocaleString('en-PK', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+
+                    {tx.notes && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-1.5 rounded-lg border border-emerald-200/50 dark:border-emerald-900/40">
+                        {tx.notes}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleOpenTxReceipt(tx)}
+                        className="flex-1 py-2 px-3 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap"
+                      >
+                        <Receipt className="w-4 h-4" />
+                        <span>پرچی (Receipt)</span>
+                      </button>
+
+                      {planLimits?.allowWhatsApp ? (
+                        <button
+                          onClick={() => handleSendWhatsAppReceipt(tx)}
+                          className="flex-1 py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap shadow-xs"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>WhatsApp Slip</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="flex-1 py-2 px-3 bg-slate-100 dark:bg-slate-850 text-slate-400 rounded-xl text-xs font-medium flex items-center justify-center space-x-1 opacity-50 cursor-not-allowed"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                  <tr>
+                    <th className="py-3.5 px-4">Date & Time</th>
+                    <th className="py-3.5 px-4">Customer Details</th>
+                    <th className="py-3.5 px-4">Amount Wasool</th>
+                    <th className="py-3.5 px-4">Channel</th>
+                    <th className="py-3.5 px-4">Remaining Baqaya</th>
+                    <th className="py-3.5 px-4">Remarks / Collector</th>
+                    <th className="py-3.5 px-4 text-right">Receipt Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredWasooliList.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center text-slate-400">
+                        No Wasooli payments found matching criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredWasooliList.map((tx) => (
+                      <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition">
+                        <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                          {new Date(tx.date).toLocaleString('en-PK', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 dark:text-white">{tx.customerName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{tx.customerPhone}</div>
+                        </td>
+                        <td className="py-3 px-4 font-black text-sm text-emerald-600 dark:text-emerald-400">
+                          +{formatCurrency(tx.amount)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            {tx.paymentMethod ? tx.paymentMethod.replace('_', ' ') : 'CASH'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
+                          {formatCurrency(tx.balanceAfter)}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500">
+                          <div>{tx.notes || 'Payment Received'}</div>
+                          {tx.recordedByName && (
+                            <div className="text-[10px] text-slate-400">By: {tx.recordedByName}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              onClick={() => handleOpenTxReceipt(tx)}
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-brand-950/40 dark:text-brand-300 transition flex items-center space-x-1"
+                              title="Print 80mm Wasooli Slip"
+                            >
+                              <Receipt className="w-3.5 h-3.5" />
+                              <span>پرچی</span>
+                            </button>
+                            {planLimits?.allowWhatsApp && (
+                              <button
+                                onClick={() => handleSendWhatsAppReceipt(tx)}
+                                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 transition flex items-center space-x-1"
+                                title="Share WhatsApp Slip"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                <span>WhatsApp</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: UDHAR GIVEN */}
+      {activeMainTab === 'udhar' && (
+        <div className="space-y-4">
+          {/* Quick Header Banner */}
+          <div className="bg-gradient-to-r from-rose-600/10 via-rose-500/5 to-transparent border border-rose-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div>
+              <div className="flex items-center space-x-2 text-rose-600 dark:text-rose-400 font-extrabold text-sm">
+                <ArrowUpRight className="w-5 h-5" />
+                <span>Udhar Given & Credit Ledger (ادھار پرچی)</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Log of credit billing, retail khata entries, and outstanding money given to customers
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">Today's Udhar</span>
+                <span className="font-black text-rose-600 dark:text-rose-400">
+                  {formatCurrency(todayUdharCalc || metrics?.todayUdhar || 0)}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">All-Time Udhar</span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {formatCurrency(totalUdharAllTime)}
+                </span>
+              </div>
+              <button
+                onClick={() => handleOpenUdhar(null)}
+                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1 min-tap"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Give Udhar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Date Filter Bar */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={txSearchTerm}
+                onChange={(e) => setTxSearchTerm(e.target.value)}
+                placeholder="Search udhar by customer name, invoice #, or items..."
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex items-center space-x-1.5 w-full sm:w-auto">
+              {[
+                { id: 'all', label: 'All Credit' },
+                { id: 'today', label: "Today's (آج)" },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: 'week', label: 'This Week' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTxDateFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    txDateFilter === tab.id
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Udhar Records Directory: Mobile Cards (< md) + Desktop Table (md:) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+            {/* Mobile View */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredUdharList.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 p-4 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
+                    <ArrowUpRight className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs">No Udhar records found matching criteria.</p>
+                  <button
+                    onClick={() => handleOpenUdhar(null)}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs inline-flex items-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Record New Udhar</span>
+                  </button>
+                </div>
+              ) : (
+                filteredUdharList.map((tx) => (
+                  <div key={tx._id} className="p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                          {tx.customerName}
+                        </h4>
+                        <div className="text-xs text-slate-400 font-mono mt-0.5">
+                          {tx.customerPhone || 'No phone'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-black text-rose-600 dark:text-rose-400">
+                          -{formatCurrency(tx.amount)}
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          New Due: {formatCurrency(tx.balanceAfter)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="font-mono text-slate-700 dark:text-slate-300 font-semibold truncate mr-2">
+                        {tx.orderNumber ? `Bill #${tx.orderNumber}` : 'Credit Given'}
+                      </span>
+                      <span className="text-[11px] text-slate-400 flex-shrink-0">
+                        {new Date(tx.date).toLocaleString('en-PK', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+
+                    {tx.notes && (
+                      <p className="text-xs text-slate-600 dark:text-slate-300 bg-rose-50/50 dark:bg-rose-950/20 px-3 py-1.5 rounded-lg border border-rose-200/50 dark:border-rose-900/40">
+                        {tx.notes}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => handleOpenTxReceipt(tx)}
+                        className="flex-1 py-2 px-3 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap"
+                      >
+                        <Receipt className="w-4 h-4" />
+                        <span>پرچی (Receipt)</span>
+                      </button>
+
+                      {planLimits?.allowWhatsApp ? (
+                        <button
+                          onClick={() => handleSendWhatsAppReceipt(tx)}
+                          className="flex-1 py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap shadow-xs"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>WhatsApp Slip</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="flex-1 py-2 px-3 bg-slate-100 dark:bg-slate-850 text-slate-400 rounded-xl text-xs font-medium flex items-center justify-center space-x-1 opacity-50 cursor-not-allowed"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                  <tr>
+                    <th className="py-3.5 px-4">Date & Time</th>
+                    <th className="py-3.5 px-4">Customer Details</th>
+                    <th className="py-3.5 px-4">Udhar Amount</th>
+                    <th className="py-3.5 px-4">Bill / Order #</th>
+                    <th className="py-3.5 px-4">Items / Remarks</th>
+                    <th className="py-3.5 px-4">New Total Due</th>
+                    <th className="py-3.5 px-4 text-right">Receipt Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredUdharList.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center text-slate-400">
+                        No Udhar records found matching criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUdharList.map((tx) => (
+                      <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition">
+                        <td className="py-3 px-4 text-slate-500 whitespace-nowrap">
+                          {new Date(tx.date).toLocaleString('en-PK', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 dark:text-white">{tx.customerName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{tx.customerPhone}</div>
+                        </td>
+                        <td className="py-3 px-4 font-black text-sm text-rose-600 dark:text-rose-400">
+                          -{formatCurrency(tx.amount)}
+                        </td>
+                        <td className="py-3 px-4 font-mono font-semibold text-slate-700 dark:text-slate-300">
+                          {tx.orderNumber || '—'}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 max-w-xs truncate">
+                          <div>{tx.notes || 'Udhar Given'}</div>
+                          {tx.recordedByName && (
+                            <div className="text-[10px] text-slate-400">By: {tx.recordedByName}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 font-black text-slate-900 dark:text-white">
+                          {formatCurrency(tx.balanceAfter)}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end space-x-1.5">
+                            <button
+                              onClick={() => handleOpenTxReceipt(tx)}
+                              className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 transition flex items-center space-x-1"
+                              title="Print 80mm Udhar Slip"
+                            >
+                              <Receipt className="w-3.5 h-3.5" />
+                              <span>پرچی</span>
+                            </button>
+                            {planLimits?.allowWhatsApp && (
+                              <button
+                                onClick={() => handleSendWhatsAppReceipt(tx)}
+                                className="px-2.5 py-1 text-xs font-bold rounded-lg bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 transition flex items-center space-x-1"
+                                title="Share WhatsApp Slip"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                <span>WhatsApp</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: RECENT UPDATES FEED */}
+      {activeMainTab === 'updates' && (
+        <div className="space-y-4">
+          {/* Quick Header Banner */}
+          <div className="bg-gradient-to-r from-blue-600/10 via-brand-500/5 to-transparent border border-blue-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div>
+              <div className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 font-extrabold text-sm">
+                <Clock className="w-5 h-5" />
+                <span>Recent Khata Updates & Audit Timeline (تازہ ترین کھاتہ اپڈیٹس)</span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Real-time chronological activity feed of every Udhar given and Wasooli collected
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">Today Wasool</span>
+                <span className="font-black text-emerald-600 dark:text-emerald-400">
+                  +{formatCurrency(todayWasooliCalc || metrics?.todayWasooli || 0)}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">Today Udhar</span>
+                <span className="font-black text-rose-600 dark:text-rose-400">
+                  -{formatCurrency(todayUdharCalc || metrics?.todayUdhar || 0)}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                <span className="text-slate-400 text-[10px] uppercase font-bold block">Total Feed Count</span>
+                <span className="font-black text-slate-900 dark:text-white">
+                  {allTransactions.length} entries
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Search & Date Filter Bar */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center gap-3">
+            <div className="relative flex-1 w-full">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                value={txSearchTerm}
+                onChange={(e) => setTxSearchTerm(e.target.value)}
+                placeholder="Search live updates by customer name, order #, or notes..."
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="flex items-center space-x-1.5 w-full sm:w-auto">
+              {[
+                { id: 'all', label: 'All Activity' },
+                { id: 'today', label: "Today's (آج)" },
+                { id: 'yesterday', label: 'Yesterday' },
+                { id: 'week', label: 'This Week' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTxDateFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    txDateFilter === tab.id
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Feed Directory: Mobile Cards (< md) + Desktop Table (md:) */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+            {/* Mobile View */}
+            <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredUpdatesList.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 p-4 space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <p className="text-xs">No recent updates found matching your filter criteria.</p>
+                </div>
+              ) : (
+                filteredUpdatesList.map((tx) => {
+                  const isPayment = tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI';
+                  return (
+                    <div key={tx._id} className="p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              isPayment
+                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
+                                : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                            }`}
+                          >
+                            {isPayment ? (
+                              <ArrowDownLeft className="w-4 h-4" />
+                            ) : (
+                              <ArrowUpRight className="w-4 h-4" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
+                              {tx.customerName}
+                            </h4>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {tx.customerPhone || 'No phone'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div
+                            className={`text-base font-black ${
+                              isPayment
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {isPayment ? '+' : '-'}
+                            {formatCurrency(tx.amount)}
+                          </div>
+                          <span className="text-[10px] text-slate-400">
+                            Baqaya: {formatCurrency(tx.balanceAfter)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-slate-500 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                        <span
+                          className={`font-bold px-2 py-0.5 rounded-md text-[10px] ${
+                            isPayment
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                              : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
+                          }`}
+                        >
+                          {isPayment ? 'Wasooli Received' : 'Udhar Given'}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {new Date(tx.date).toLocaleString('en-PK', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+
+                      {tx.notes && (
+                        <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-855 px-3 py-1.5 rounded-lg">
+                          {tx.notes}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          onClick={() => handleOpenTxReceipt(tx)}
+                          className="flex-1 py-2 px-3 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap"
+                        >
+                          <Receipt className="w-4 h-4" />
+                          <span>پرچی (Receipt)</span>
+                        </button>
+
+                        {planLimits?.allowWhatsApp ? (
+                          <button
+                            onClick={() => handleSendWhatsAppReceipt(tx)}
+                            className="flex-1 py-2 px-3 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 min-tap shadow-xs"
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span>WhatsApp Slip</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="flex-1 py-2 px-3 bg-slate-100 dark:bg-slate-850 text-slate-400 rounded-xl text-xs font-medium flex items-center justify-center space-x-1 opacity-50 cursor-not-allowed"
+                          >
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>WhatsApp</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
+                  <tr>
+                    <th className="py-3.5 px-4">Action Type & Date</th>
+                    <th className="py-3.5 px-4">Customer Details</th>
+                    <th className="py-3.5 px-4">Transaction Amount</th>
+                    <th className="py-3.5 px-4">Details / Order / Notes</th>
+                    <th className="py-3.5 px-4">Resulting Balance</th>
+                    <th className="py-3.5 px-4">Recorded By</th>
+                    <th className="py-3.5 px-4 text-right">Receipt Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredUpdatesList.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="py-12 text-center text-slate-400">
+                        No recent updates found matching your filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUpdatesList.map((tx) => {
+                      const isPayment = tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI';
+                      return (
+                        <tr key={tx._id} className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition">
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  isPayment
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                }`}
+                              >
+                                {isPayment ? 'Wasooli' : 'Udhar'}
+                              </span>
+                              <span className="text-slate-500 text-[11px]">
+                                {new Date(tx.date).toLocaleString('en-PK', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-slate-900 dark:text-white">{tx.customerName}</div>
+                            <div className="text-[10px] text-slate-400 font-mono">{tx.customerPhone}</div>
+                          </td>
+                          <td
+                            className={`py-3 px-4 font-black text-sm ${
+                              isPayment
+                                ? 'text-emerald-600 dark:text-emerald-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {isPayment ? '+' : '-'}
+                            {formatCurrency(tx.amount)}
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs truncate">
+                            {tx.orderNumber && (
+                              <span className="font-mono text-xs font-semibold mr-1">
+                                [{tx.orderNumber}]
+                              </span>
+                            )}
+                            {tx.notes || (isPayment ? 'Wasooli Repayment' : 'Udhar Credit')}
+                          </td>
+                          <td className="py-3 px-4 font-black text-slate-900 dark:text-white">
+                            {formatCurrency(tx.balanceAfter)}
+                          </td>
+                          <td className="py-3 px-4 text-slate-500 text-[11px]">
+                            {tx.recordedByName || 'Cashier'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <button
+                                onClick={() => handleOpenTxReceipt(tx)}
+                                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition flex items-center space-x-1 ${
+                                  isPayment
+                                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300'
+                                }`}
+                                title="Print Slip"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                <span>پرچی</span>
+                              </button>
+                              {planLimits?.allowWhatsApp && (
+                                <button
+                                  onClick={() => handleSendWhatsAppReceipt(tx)}
+                                  className="px-2.5 py-1 text-xs font-bold rounded-lg bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-950/40 dark:text-green-300 transition flex items-center space-x-1"
+                                  title="Share WhatsApp Slip"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                  <span>WhatsApp</span>
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: New Khata Customer */}
       <Modal

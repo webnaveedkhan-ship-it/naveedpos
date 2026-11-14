@@ -391,7 +391,74 @@ const recordUdharGiven = async (req, res, next) => {
   }
 };
 
-// @desc    Get Khata Dashboard Metrics (Total Market Debt, Debtors, Today's Wasooli)
+// @desc    Get all recent Khata transactions across all customers (Wasooli, Udhar Given)
+// @route   GET /api/khata/transactions
+// @access  Private (Store Admin, Cashier)
+const getKhataTransactions = async (req, res, next) => {
+  try {
+    const tenantId = req.user.tenantId;
+    const { type, limit = 100 } = req.query;
+
+    if (global.useMemoryStore) {
+      const matchTenant = (k) => k && (k.tenantId || '').toString() === tenantId.toString();
+      const tenantCustomers = memoryStore.khatas.filter(matchTenant);
+      const allTx = [];
+
+      tenantCustomers.forEach((c) => {
+        (c.transactions || []).forEach((tx) => {
+          if (!type || tx.type === type) {
+            allTx.push({
+              ...tx,
+              customerId: c._id,
+              customerName: c.name,
+              customerPhone: c.phone,
+              customerAddress: c.address,
+              currentDebt: Number(c.totalDebt || 0),
+            });
+          }
+        });
+      });
+
+      allTx.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      return res.status(200).json({
+        success: true,
+        count: allTx.length,
+        transactions: allTx.slice(0, Number(limit)),
+      });
+    }
+
+    const customers = await CustomerKhata.find({ tenantId }).lean();
+    const allTx = [];
+
+    customers.forEach((c) => {
+      (c.transactions || []).forEach((tx) => {
+        if (!type || tx.type === type) {
+          allTx.push({
+            ...tx,
+            customerId: c._id,
+            customerName: c.name,
+            customerPhone: c.phone,
+            customerAddress: c.address,
+            currentDebt: Number(c.totalDebt || 0),
+          });
+        }
+      });
+    });
+
+    allTx.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+    res.status(200).json({
+      success: true,
+      count: allTx.length,
+      transactions: allTx.slice(0, Number(limit)),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get Khata Dashboard Metrics (Total Market Debt, Debtors, Today's Wasooli & Udhar)
 // @route   GET /api/khata/metrics
 // @access  Private (Store Admin, Cashier)
 const getKhataMetrics = async (req, res, next) => {
@@ -402,15 +469,26 @@ const getKhataMetrics = async (req, res, next) => {
     todayStart.setHours(0, 0, 0, 0);
 
     if (global.useMemoryStore) {
-      const tenantCustomers = memoryStore.khatas.filter((k) => k.tenantId === tenantId);
+      const matchTenant = (k) => k && (k.tenantId || '').toString() === tenantId.toString();
+      const tenantCustomers = memoryStore.khatas.filter(matchTenant);
       const totalMarketDebt = tenantCustomers.reduce((sum, c) => sum + (c.totalDebt > 0 ? c.totalDebt : 0), 0);
       const totalDebtorsCount = tenantCustomers.filter((c) => c.totalDebt > 0).length;
 
       let todayWasooli = 0;
+      let todayUdhar = 0;
+      let todayWasooliCount = 0;
+      let todayUdharCount = 0;
+
       tenantCustomers.forEach((c) => {
         (c.transactions || []).forEach((tx) => {
-          if (tx && tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
-            todayWasooli += Number(tx.amount) || 0;
+          if (tx && new Date(tx.date) >= todayStart) {
+            if (tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI') {
+              todayWasooli += Number(tx.amount) || 0;
+              todayWasooliCount += 1;
+            } else if (tx.type === 'UDHAR_GIVEN') {
+              todayUdhar += Number(tx.amount) || 0;
+              todayUdharCount += 1;
+            }
           }
         });
       });
@@ -426,6 +504,9 @@ const getKhataMetrics = async (req, res, next) => {
           totalMarketDebt: Math.round(totalMarketDebt * 100) / 100,
           totalDebtorsCount,
           todayWasooli: Math.round(todayWasooli * 100) / 100,
+          todayUdhar: Math.round(todayUdhar * 100) / 100,
+          todayWasooliCount,
+          todayUdharCount,
           totalCustomers: tenantCustomers.length,
         },
         topDebtors,
@@ -437,10 +518,20 @@ const getKhataMetrics = async (req, res, next) => {
     const totalDebtorsCount = customers.filter((c) => c.totalDebt > 0).length;
 
     let todayWasooli = 0;
+    let todayUdhar = 0;
+    let todayWasooliCount = 0;
+    let todayUdharCount = 0;
+
     customers.forEach((c) => {
       (c.transactions || []).forEach((tx) => {
-        if (tx && tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
-          todayWasooli += Number(tx.amount) || 0;
+        if (tx && new Date(tx.date) >= todayStart) {
+          if (tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI') {
+            todayWasooli += Number(tx.amount) || 0;
+            todayWasooliCount += 1;
+          } else if (tx.type === 'UDHAR_GIVEN') {
+            todayUdhar += Number(tx.amount) || 0;
+            todayUdharCount += 1;
+          }
         }
       });
     });
@@ -455,6 +546,9 @@ const getKhataMetrics = async (req, res, next) => {
         totalMarketDebt: Math.round(totalMarketDebt * 100) / 100,
         totalDebtorsCount,
         todayWasooli: Math.round(todayWasooli * 100) / 100,
+        todayUdhar: Math.round(todayUdhar * 100) / 100,
+        todayWasooliCount,
+        todayUdharCount,
         totalCustomers: customers.length,
       },
       topDebtors,
@@ -471,4 +565,5 @@ module.exports = {
   recordKhataPayment,
   recordUdharGiven,
   getKhataMetrics,
+  getKhataTransactions,
 };

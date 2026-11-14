@@ -502,6 +502,36 @@ export const khataService = {
       return { data: { success: false, message: 'Customer not found' } };
     }
   },
+
+  getTransactions: async (params) => {
+    try {
+      return await api.get('/khata/transactions', { params });
+    } catch {
+      const allTx = [];
+      (localState.khatas || []).forEach((c) => {
+        (c.transactions || []).forEach((tx) => {
+          if (!params?.type || tx.type === params.type) {
+            allTx.push({
+              ...tx,
+              customerId: c._id,
+              customerName: c.name,
+              customerPhone: c.phone,
+              customerAddress: c.address,
+              currentDebt: Number(c.totalDebt ?? c.netBalance ?? 0),
+            });
+          }
+        });
+      });
+      allTx.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      return {
+        data: {
+          success: true,
+          transactions: allTx,
+          count: allTx.length,
+        },
+      };
+    }
+  },
 };
 
 // Super Admin & Store Admin Billing SaaS Endpoints
