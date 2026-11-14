@@ -79,8 +79,8 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <Navigate to="/super-admin" replace />;
   }
 
-  // 3. Sub-role restriction: Only store owners can access /staff and /billing
-  if (allowedRoles.includes('STORE_OWNER')) {
+  // 3. Sub-role restriction: Only store owners can access owner-only routes (/staff, /billing)
+  if (allowedRoles.includes('STORE_OWNER') && !allowedRoles.includes('CASHIER')) {
     const isOwner =
       effectiveRole === 'STORE_OWNER' ||
       effectiveRole === 'STORE_ADMIN' ||

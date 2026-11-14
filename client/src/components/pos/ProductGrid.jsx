@@ -80,7 +80,7 @@ const ProductGrid = ({
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
       e.preventDefault();
       const trimmed = searchTerm.trim().toUpperCase();
-      const exactSkuMatch = products.find((p) => p.sku === trimmed);
+      const exactSkuMatch = safeProducts.find((p) => p && p.sku === trimmed);
 
       if (exactSkuMatch) {
         if (exactSkuMatch.stockQuantity > 0) {

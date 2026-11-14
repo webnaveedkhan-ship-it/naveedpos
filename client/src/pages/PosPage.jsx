@@ -62,9 +62,10 @@ const PosPage = () => {
   };
 
   const handleProductCreated = (newProduct) => {
-    setProducts((prev) => [newProduct, ...prev]);
-    if (newProduct.category && !categories.includes(newProduct.category)) {
-      setCategories((prev) => [...prev, newProduct.category]);
+    if (!newProduct) return;
+    setProducts((prev) => [newProduct, ...(Array.isArray(prev) ? prev : [])]);
+    if (newProduct.category && !(categories || []).includes(newProduct.category)) {
+      setCategories((prev) => [...(Array.isArray(prev) ? prev : ['All']), newProduct.category]);
     }
     if (newProduct.stockQuantity > 0) {
       addToCart(newProduct, 1);

@@ -19,7 +19,7 @@ const tenantGuard = async (req, res, next) => {
 
     let tenant;
     if (global.useMemoryStore) {
-      tenant = memoryStore.tenants.find((t) => t._id === tenantId.toString());
+      tenant = memoryStore.tenants.find((t) => (t._id || '').toString() === tenantId.toString());
     } else {
       tenant = await Tenant.findById(tenantId);
     }

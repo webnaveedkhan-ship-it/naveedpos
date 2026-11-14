@@ -21,6 +21,7 @@ router.use(tenantGuard);
 // Low Stock & Metadata
 router.get('/low-stock', getLowStockProducts);
 router.get('/meta/categories', getCategories);
+router.get('/categories', getCategories);
 router.get('/sku/:sku', getProductBySku);
 
 // Quick Inline Restock

@@ -43,6 +43,8 @@ const InventoryPage = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const safeProducts = Array.isArray(products) ? products : [];
+
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -55,13 +57,17 @@ const InventoryPage = () => {
       };
 
       const res = await productService.getProducts(params);
-      if (res.data.success) {
-        setProducts(res.data.products);
-        setTotalPages(res.data.totalPages);
-        setTotalCount(res.data.total);
+      if (res.data?.success) {
+        const list = Array.isArray(res.data.products) ? res.data.products : [];
+        setProducts(list);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalCount(res.data.total || list.length);
+      } else {
+        setProducts([]);
       }
     } catch (err) {
       console.error('Error fetching inventory:', err);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -70,11 +76,15 @@ const InventoryPage = () => {
   const fetchCategories = useCallback(async () => {
     try {
       const res = await productService.getCategories();
-      if (res.data.success) {
-        setCategories(['All', ...res.data.categories]);
+      if (res.data?.success) {
+        const rawCats = Array.isArray(res.data.categories) ? res.data.categories : [];
+        setCategories(['All', ...rawCats.filter(Boolean)]);
+      } else {
+        setCategories(['All']);
       }
     } catch (err) {
       console.error('Error fetching categories:', err);
+      setCategories(['All']);
     }
   }, []);
 
@@ -222,12 +232,27 @@ const InventoryPage = () => {
               <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
               Loading inventory records...
             </div>
-          ) : products.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 p-4">
-              No items match the selected criteria.
+          ) : safeProducts.length === 0 ? (
+            <div className="py-12 text-center text-slate-400 p-6 flex flex-col items-center">
+              <Package className="w-12 h-12 stroke-1 mb-2 text-slate-500" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No products found</p>
+              <p className="text-xs text-slate-500 mt-1 mb-3">Add items to manage catalog and start billing</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setIsModalOpen(true);
+                  }}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Product</span>
+                </button>
+              )}
             </div>
           ) : (
-            products.map((item) => {
+            safeProducts.map((item) => {
               const profit = item.price - (item.costPrice || 0);
               const marginPct = item.price > 0 ? ((profit / item.price) * 100).toFixed(0) : 0;
               return (
@@ -318,14 +343,31 @@ const InventoryPage = () => {
                     Loading inventory records...
                   </td>
                 </tr>
-              ) : products.length === 0 ? (
+              ) : safeProducts.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-12 text-center text-slate-400">
-                    No items match the selected criteria.
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <Package className="w-10 h-10 stroke-1 mb-2 text-slate-500" />
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Your store catalog is empty</p>
+                      <p className="text-xs text-slate-500 mt-0.5 mb-3">Add your first product to begin billing in POS</p>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProduct(null);
+                            setIsModalOpen(true);
+                          }}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add First Product</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
-                products.map((item) => {
+                safeProducts.map((item) => {
                   const profit = item.price - (item.costPrice || 0);
                   const marginPct = item.price > 0 ? ((profit / item.price) * 100).toFixed(0) : 0;
 

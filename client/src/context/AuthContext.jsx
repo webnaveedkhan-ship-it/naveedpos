@@ -39,26 +39,18 @@ export const AuthProvider = ({ children }) => {
         try {
           const res = await authService.getMe();
           if (res?.data?.success && res.data.user) {
-            // Guard: Never downgrade an active Super Admin session if server returns fallback Store Admin
-            const savedUserStr = localStorage.getItem('user');
-            let savedUser = null;
-            try {
-              savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-            } catch (e) {}
+            const serverUser = res.data.user;
+            const r = (serverUser.role || '').toUpperCase();
+            const em = (serverUser.email || '').toLowerCase();
+            const normalizedRole =
+              em === 'naveed@naveedpos.com' || r === 'SUPER_ADMIN' || r === 'SUPERADMIN'
+                ? 'SUPER_ADMIN'
+                : (r === 'CASHIER' ? 'CASHIER' : 'STORE_OWNER');
 
-            const isSavedSuperAdmin =
-              savedUser?.role === 'SUPER_ADMIN' ||
-              savedUser?.role === 'SUPERADMIN' ||
-              savedUser?.email?.toLowerCase() === 'naveed@naveedpos.com';
-
-            const nextUser = isSavedSuperAdmin
-              ? {
-                  ...res.data.user,
-                  role: 'SUPER_ADMIN',
-                  email: savedUser.email || 'naveed@naveedpos.com',
-                  name: savedUser.name || 'Naveed (Platform Super Admin)',
-                }
-              : res.data.user;
+            const nextUser = {
+              ...serverUser,
+              role: normalizedRole,
+            };
 
             setUser(nextUser);
             localStorage.setItem('user', JSON.stringify(nextUser));
@@ -76,10 +68,25 @@ export const AuthProvider = ({ children }) => {
     verifyUser();
   }, [token]);
 
+  const normalizeUserData = (rawUser) => {
+    if (!rawUser) return rawUser;
+    const r = (rawUser.role || '').toUpperCase();
+    const em = (rawUser.email || '').toLowerCase();
+    const normalizedRole =
+      em === 'naveed@naveedpos.com' || r === 'SUPER_ADMIN' || r === 'SUPERADMIN'
+        ? 'SUPER_ADMIN'
+        : (r === 'CASHIER' ? 'CASHIER' : 'STORE_OWNER');
+    return {
+      ...rawUser,
+      role: normalizedRole,
+    };
+  };
+
   const login = async (email, password) => {
     const res = await authService.login({ email, password });
     if (res?.data?.success && res.data.user) {
-      const { token: receivedToken, user: receivedUser } = res.data;
+      const { token: receivedToken, user: rawUser } = res.data;
+      const receivedUser = normalizeUserData(rawUser);
       setToken(receivedToken);
       setUser(receivedUser);
       localStorage.setItem('token', receivedToken);
@@ -87,7 +94,7 @@ export const AuthProvider = ({ children }) => {
       return receivedUser;
     }
     if (res?.data?.user) {
-      const receivedUser = res.data.user;
+      const receivedUser = normalizeUserData(res.data.user);
       const receivedToken = res.data.token || 'demo-token';
       setToken(receivedToken);
       setUser(receivedUser);
@@ -101,7 +108,8 @@ export const AuthProvider = ({ children }) => {
   const registerTrial = async (formData) => {
     const res = await authService.registerTrial(formData);
     if (res?.data?.success && res.data.user) {
-      const { token: receivedToken, user: receivedUser } = res.data;
+      const { token: receivedToken, user: rawUser } = res.data;
+      const receivedUser = normalizeUserData(rawUser);
       setToken(receivedToken);
       setUser(receivedUser);
       localStorage.setItem('token', receivedToken);
@@ -109,7 +117,7 @@ export const AuthProvider = ({ children }) => {
       return receivedUser;
     }
     if (res?.data?.user) {
-      const receivedUser = res.data.user;
+      const receivedUser = normalizeUserData(res.data.user);
       const receivedToken = res.data.token || 'demo-token';
       setToken(receivedToken);
       setUser(receivedUser);
@@ -177,8 +185,8 @@ export const AuthProvider = ({ children }) => {
     userRole === 'SUPER_ADMIN' ||
     userRole === 'SUPERADMIN' ||
     userEmail === 'naveed@naveedpos.com';
-  const isStoreAdmin = true;
-  const isCashier = true;
+  const isStoreAdmin = !isSuperAdmin && userRole !== 'CASHIER';
+  const isCashier = userRole === 'CASHIER';
   const tenantPlan = user?.tenantPlan || (isSuperAdmin ? 'premium' : 'trial');
   const planLimits = user?.planLimits || (isSuperAdmin ? {
     allowBarcodeGen: true,

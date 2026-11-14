@@ -78,8 +78,8 @@ const getProducts = async (req, res, next) => {
       const products = await Product.find(query).sort({ title: 1 });
       return res.status(200).json({
         success: true,
-        count: products.length,
-        products,
+        count: (products || []).length,
+        products: products || [],
       });
     }
 
@@ -95,11 +95,11 @@ const getProducts = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      count: products.length,
-      total,
-      totalPages: Math.ceil(total / limitNum) || 1,
+      count: (products || []).length,
+      total: total || 0,
+      totalPages: Math.ceil((total || 0) / limitNum) || 1,
       currentPage: pageNum,
-      products,
+      products: products || [],
     });
   } catch (error) {
     next(error);
@@ -384,7 +384,7 @@ const getCategories = async (req, res, next) => {
     if (global.useMemoryStore) {
       const distinct = Array.from(
         new Set(
-          memoryStore.products
+          (memoryStore.products || [])
             .filter((p) => !tenantId || p.tenantId === tenantId)
             .map((p) => p.category)
             .filter(Boolean)
@@ -396,7 +396,7 @@ const getCategories = async (req, res, next) => {
     const distinctCategories = await Product.distinct('category', { status: 'active', tenantId });
     res.status(200).json({
       success: true,
-      categories: distinctCategories.filter(Boolean).sort(),
+      categories: (distinctCategories || []).filter(Boolean).sort(),
     });
   } catch (error) {
     next(error);

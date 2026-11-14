@@ -84,14 +84,19 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     }
   });
 
-  // Active tab state: 'superadmin' | 'signup' | 'login'
-  // 14-Day Free Trial is the primary recommended option
+  // Active tab state: 'login' | 'signup' | 'superadmin'
+  // Regular visitors see two tabs: [ Sign In ] and [ Start 14-Day Free Trial ]
   const [activeTab, setActiveTab] = useState(() => {
     if (isSuperAdminPath) return 'superadmin';
-    if (location.pathname === '/login' || location.pathname === '/store-login' || defaultTab === 'login') {
-      return 'login';
+    if (
+      location.pathname === '/signup' ||
+      location.pathname === '/free-trial' ||
+      location.pathname === '/register' ||
+      defaultTab === 'signup'
+    ) {
+      return 'signup';
     }
-    return 'signup'; // Default to 14-Day Free Trial
+    return 'login'; // Default to Sign In
   });
 
   // Form Fields State
@@ -211,7 +216,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
         const isMasterSuperAdmin =
           role === 'SUPER_ADMIN' ||
           role === 'SUPERADMIN' ||
-          (activeTab === 'superadmin' && email === 'naveed@naveedpos.com');
+          email === 'naveed@naveedpos.com';
 
         if (isMasterSuperAdmin) {
           navigate('/super-admin', { replace: true });
@@ -507,47 +512,15 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
             <div className="bg-white/95 dark:bg-[#1C2541]/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
               {/* ------------------------------------------------------------- */}
-              {/* TOP SEGMENTED SWITCHER: [ 14-Day Free Trial ] | [ Sign In ]   */}
-              {/* Super Admin option is ONLY displayed when owner is identified */}
+              {/* TOP SEGMENTED SWITCHER: [ Sign In ] | [ 14-Day Free Trial ]   */}
+              {/* Super Admin option is ONLY displayed on private admin route   */}
               {/* ------------------------------------------------------------- */}
               <div
                 className={`grid ${
-                  isOwnerDetected ? 'grid-cols-3' : 'grid-cols-2'
+                  activeTab === 'superadmin' ? 'grid-cols-3' : 'grid-cols-2'
                 } p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-3.5 transition-all duration-300 gap-1`}
               >
-                {/* 1. SUPER ADMIN TAB - Only visible if owner detected */}
-                {isOwnerDetected && (
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange('superadmin')}
-                    className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
-                      activeTab === 'superadmin'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20'
-                        : 'text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-200 hover:bg-indigo-500/10'
-                    }`}
-                    title="Platform Owner Console (/super-admin-login)"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                    <span className="truncate">Super Admin</span>
-                  </button>
-                )}
-
-                {/* 2. 14-DAY FREE TRIAL TAB - Best Option (Visible to Everyone) */}
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('signup')}
-                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
-                    activeTab === 'signup'
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
-                  }`}
-                  title="14-Day Free Store Trial (/free-trial)"
-                >
-                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-amber-500 dark:text-amber-300" />
-                  <span className="truncate">14-Day Free Trial</span>
-                </button>
-
-                {/* 3. SIGN IN TAB - For Existing Store Accounts */}
+                {/* 1. SIGN IN TAB - Default for returning Store Owners, Cashiers, and Super Admin */}
                 <button
                   type="button"
                   onClick={() => handleTabChange('login')}
@@ -561,6 +534,34 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   <Store className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                   <span className="truncate">Sign In</span>
                 </button>
+
+                {/* 2. 14-DAY FREE TRIAL TAB - For new store owners to register their store */}
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('signup')}
+                  className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                    activeTab === 'signup'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-md shadow-emerald-500/20 ring-1 ring-white/20'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                  }`}
+                  title="Start 14-Day Free Store Trial (/free-trial)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 text-amber-500 dark:text-amber-300" />
+                  <span className="truncate">Start 14-Day Free Trial</span>
+                </button>
+
+                {/* 3. SUPER ADMIN TAB - Only visible when visiting private admin URL or unlocked */}
+                {activeTab === 'superadmin' && (
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('superadmin')}
+                    className="min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20"
+                    title="Platform Owner Console (/super-admin-login)"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">Super Admin</span>
+                  </button>
+                )}
               </div>
 
               {/* Context / URL Indicator Badge */}

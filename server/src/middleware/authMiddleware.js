@@ -50,7 +50,7 @@ const protect = async (req, res, next) => {
 
     // Standardize role to uppercase
     user.role = (user.role || 'CASHIER').toUpperCase();
-    if (user.role === 'ADMIN') user.role = 'STORE_ADMIN';
+    if (user.role === 'ADMIN' || user.role === 'STORE_ADMIN') user.role = 'STORE_OWNER';
 
     req.user = user;
     next();
@@ -63,10 +63,15 @@ const protect = async (req, res, next) => {
 };
 
 const authorize = (...roles) => {
-  const normalizedRoles = roles.map((r) => {
-    let u = r.toUpperCase();
-    if (u === 'ADMIN') return 'STORE_ADMIN';
-    return u;
+  const allowedSet = new Set();
+  roles.forEach((r) => {
+    const u = r.toUpperCase();
+    allowedSet.add(u);
+    if (u === 'STORE_ADMIN' || u === 'STORE_OWNER' || u === 'ADMIN') {
+      allowedSet.add('STORE_OWNER');
+      allowedSet.add('STORE_ADMIN');
+      allowedSet.add('ADMIN');
+    }
   });
 
   return (req, res, next) => {
@@ -84,7 +89,7 @@ const authorize = (...roles) => {
       return next();
     }
 
-    if (!normalizedRoles.includes(userRole)) {
+    if (!allowedSet.has(userRole)) {
       return res.status(403).json({
         success: false,
         message: `Forbidden: User role '${userRole}' is not authorized to perform this action.`,
