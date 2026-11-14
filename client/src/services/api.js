@@ -325,18 +325,29 @@ export const authService = {
 export const khataService = {
   getMetrics: async () => {
     try {
-      return await api.get('/khata/metrics');
+      const res = await api.get('/khata/metrics');
+      if (res?.data?.metrics) return res;
+      throw new Error('Invalid metrics response');
     } catch {
-      const totalUdhar = localState.khatas.reduce((acc, k) => acc + (k.totalUdhar || 0), 0);
-      const totalPaid = localState.khatas.reduce((acc, k) => acc + (k.totalPaid || 0), 0);
+      const list = Array.isArray(localState.khatas) ? localState.khatas : [];
+      const totalUdhar = list.reduce(
+        (acc, k) => acc + (Number(k.totalDebt ?? k.netBalance ?? k.totalUdhar) || 0),
+        0
+      );
+      const totalDebtors = list.filter(
+        (k) => (Number(k.totalDebt ?? k.netBalance ?? 0) > 0)
+      ).length;
       return {
         data: {
           success: true,
           metrics: {
+            totalMarketDebt: totalUdhar,
+            totalDebtorsCount: totalDebtors,
+            todayWasooli: 0,
+            totalCustomers: list.length,
+            // Aliases for compatibility
             totalUdhar,
-            totalPaid,
-            netBalance: totalUdhar - totalPaid,
-            customerCount: localState.khatas.length,
+            customerCount: list.length,
           },
         },
       };
@@ -345,13 +356,29 @@ export const khataService = {
 
   getCustomers: async (params) => {
     try {
-      return await api.get('/khata/customers', { params });
+      const res = await api.get('/khata/customers', { params });
+      if (res?.data && (Array.isArray(res.data.customers) || Array.isArray(res.data.data))) {
+        return {
+          data: {
+            success: true,
+            customers: Array.isArray(res.data.customers) ? res.data.customers : res.data.data,
+            count: (res.data.customers || res.data.data || []).length,
+          },
+        };
+      }
+      return res;
     } catch {
+      let list = Array.isArray(localState.khatas) ? [...localState.khatas] : [];
+      if (params?.search && params.search.trim()) {
+        const q = params.search.trim().toLowerCase();
+        list = list.filter((k) => k?.name?.toLowerCase().includes(q) || k?.phone?.includes(q));
+      }
       return {
         data: {
           success: true,
-          customers: localState.khatas,
-          total: localState.khatas.length,
+          customers: list,
+          count: list.length,
+          total: list.length,
         },
       };
     }
@@ -361,7 +388,7 @@ export const khataService = {
     try {
       return await api.get(`/khata/customers/${id}`);
     } catch {
-      const customer = localState.khatas.find((k) => k._id === id) || localState.khatas[0];
+      const customer = (localState.khatas || []).find((k) => k._id === id) || (localState.khatas || [])[0];
       return { data: { success: true, customer } };
     }
   },
@@ -370,18 +397,33 @@ export const khataService = {
     try {
       return await api.post('/khata/customers', data);
     } catch {
+      const initialAmount = Number(data.initialDebt || data.initialBalance || 0);
       const newCust = {
         _id: `khata_${Date.now()}`,
         name: data.name,
         phone: data.phone,
         address: data.address || '',
-        totalUdhar: Number(data.initialBalance || 0),
+        creditLimit: Number(data.creditLimit) || 10000,
+        totalDebt: initialAmount,
+        totalUdhar: initialAmount,
         totalPaid: 0,
-        netBalance: Number(data.initialBalance || 0),
-        status: 'active',
+        netBalance: initialAmount,
+        status: initialAmount > 0 ? 'active' : 'cleared',
         createdAt: new Date().toISOString(),
+        transactions: initialAmount > 0 ? [
+          {
+            _id: `tx_${Date.now()}`,
+            type: 'UDHAR_GIVEN',
+            amount: initialAmount,
+            balanceAfter: initialAmount,
+            notes: 'Initial opening balance',
+            date: new Date().toISOString(),
+          }
+        ] : [],
       };
-      localState.khatas.unshift(newCust);
+      if (Array.isArray(localState.khatas)) {
+        localState.khatas.unshift(newCust);
+      }
       return { data: { success: true, customer: newCust } };
     }
   },
@@ -390,11 +432,24 @@ export const khataService = {
     try {
       return await api.post(`/khata/customers/${id}/payment`, paymentData);
     } catch {
-      const customer = localState.khatas.find((k) => k._id === id);
+      const customer = (localState.khatas || []).find((k) => k._id === id);
       if (customer) {
-        customer.totalPaid = (customer.totalPaid || 0) + Number(paymentData.amount || 0);
-        customer.netBalance = Math.max(0, customer.totalUdhar - customer.totalPaid);
+        const payAmount = Number(paymentData.amount || 0);
+        customer.totalPaid = (Number(customer.totalPaid) || 0) + payAmount;
+        const prevDebt = Number(customer.totalDebt ?? customer.netBalance ?? 0);
+        const newBalance = Math.max(0, prevDebt - payAmount);
+        customer.totalDebt = newBalance;
+        customer.netBalance = newBalance;
         customer.lastPaymentDate = new Date().toISOString();
+        if (!Array.isArray(customer.transactions)) customer.transactions = [];
+        customer.transactions.unshift({
+          _id: `tx_${Date.now()}`,
+          type: 'PAYMENT_RECEIVED',
+          amount: payAmount,
+          balanceAfter: newBalance,
+          notes: paymentData.notes || 'Payment Received (Wasooli)',
+          date: new Date().toISOString(),
+        });
       }
       return { data: { success: true, customer } };
     }

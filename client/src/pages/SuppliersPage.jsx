@@ -324,7 +324,7 @@ const SuppliersPage = () => {
         />
         <StatCard
           title="Active Suppliers"
-          value={suppliers.length}
+          value={(suppliers || []).length}
           icon={Building2}
           color="indigo"
           subtitle="Distributors & wholesale vendors"
@@ -334,7 +334,7 @@ const SuppliersPage = () => {
           value={formatCurrency(totalPurchasesVolume)}
           icon={Package}
           color="blue"
-          subtitle={`${purchases.length} inward invoices received`}
+          subtitle={`${(purchases || []).length} inward invoices received`}
         />
         <StatCard
           title="Total Paid to Suppliers"
@@ -357,7 +357,7 @@ const SuppliersPage = () => {
             }`}
           >
             <Building2 className="w-4 h-4" />
-            <span>Suppliers & Accounts Payable ({suppliers.length})</span>
+            <span>Suppliers & Accounts Payable ({(suppliers || []).length})</span>
           </button>
 
           <button
@@ -369,7 +369,7 @@ const SuppliersPage = () => {
             }`}
           >
             <FileText className="w-4 h-4" />
-            <span>Purchase Invoices & Inward Stock ({purchases.length})</span>
+            <span>Purchase Invoices & Inward Stock ({(purchases || []).length})</span>
           </button>
         </div>
 

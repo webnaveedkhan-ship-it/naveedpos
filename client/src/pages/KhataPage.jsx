@@ -58,18 +58,46 @@ const KhataPage = () => {
     try {
       setLoading(true);
       const [metricRes, customerRes] = await Promise.all([
-        khataService.getMetrics(),
-        khataService.getCustomers({ search: searchTerm }),
+        khataService.getMetrics().catch((err) => {
+          console.warn('Khata metrics fallback:', err);
+          return { data: { success: false } };
+        }),
+        khataService.getCustomers({ search: searchTerm }).catch((err) => {
+          console.warn('Khata customers fallback:', err);
+          return { data: { success: false, customers: [] } };
+        }),
       ]);
 
-      if (metricRes.data.success) {
+      if (metricRes?.data?.success && metricRes.data.metrics) {
         setMetrics(metricRes.data.metrics);
+      } else {
+        setMetrics((prev) => prev || {
+          totalMarketDebt: 0,
+          totalDebtorsCount: 0,
+          todayWasooli: 0,
+          totalCustomers: 0,
+        });
       }
-      if (customerRes.data.success) {
-        setCustomers(customerRes.data.customers);
+
+      if (customerRes?.data?.success) {
+        const list = Array.isArray(customerRes.data.customers)
+          ? customerRes.data.customers
+          : Array.isArray(customerRes.data.data)
+          ? customerRes.data.data
+          : [];
+        setCustomers(list);
+      } else {
+        setCustomers((prev) => (Array.isArray(prev) ? prev : []));
       }
     } catch (err) {
       console.error('Failed to load Khata data:', err);
+      setCustomers([]);
+      setMetrics((prev) => prev || {
+        totalMarketDebt: 0,
+        totalDebtorsCount: 0,
+        todayWasooli: 0,
+        totalCustomers: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -128,14 +156,16 @@ const KhataPage = () => {
   const safeCustomers = Array.isArray(customers) ? customers : [];
   const filteredCustomers = safeCustomers.filter((c) => {
     if (!c) return false;
-    if (debtFilter === 'debtors') return Number(c.totalDebt || 0) > 0;
-    if (debtFilter === 'cleared') return Number(c.totalDebt || 0) <= 0;
+    const debt = Number(c.totalDebt ?? c.netBalance ?? 0);
+    if (debtFilter === 'debtors') return debt > 0;
+    if (debtFilter === 'cleared') return debt <= 0;
     return true;
   });
 
   const parsedWasooliAmount = parseFloat(wasooliAmount) || 0;
+  const wasooliCustomerDebt = Number(wasooliCustomer?.totalDebt ?? wasooliCustomer?.netBalance ?? 0);
   const remainingAfterWasooli = wasooliCustomer
-    ? Math.max(0, wasooliCustomer.totalDebt - parsedWasooliAmount)
+    ? Math.max(0, wasooliCustomerDebt - parsedWasooliAmount)
     : 0;
 
   return (
@@ -168,28 +198,28 @@ const KhataPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Market Udhar"
-          value={formatCurrency(metrics?.totalMarketDebt || 0)}
+          value={formatCurrency(metrics?.totalMarketDebt ?? metrics?.totalUdhar ?? 0)}
           icon={BadgeAlert}
           color="rose"
           subtitle="Total outstanding money in market"
         />
         <StatCard
           title="Active Debtors"
-          value={metrics?.totalDebtorsCount || 0}
+          value={metrics?.totalDebtorsCount ?? 0}
           icon={Wallet}
           color="amber"
           subtitle="Customers owing money"
         />
         <StatCard
           title="Today's Wasooli"
-          value={formatCurrency(metrics?.todayWasooli || 0)}
+          value={formatCurrency(metrics?.todayWasooli ?? 0)}
           icon={ArrowDownLeft}
           color="brand"
           subtitle="Cash/Online collections today"
         />
         <StatCard
           title="Total Khata Accounts"
-          value={metrics?.totalCustomers || customers.length}
+          value={metrics?.totalCustomers ?? metrics?.customerCount ?? safeCustomers.length}
           icon={BookOpen}
           color="blue"
           subtitle="Registered credit customers"
@@ -247,7 +277,9 @@ const KhataPage = () => {
             </div>
           ) : (
             filteredCustomers.map((c) => {
-              const hasDebt = c.totalDebt > 0;
+              const currentDebt = Number(c.totalDebt ?? c.netBalance ?? 0);
+              const hasDebt = currentDebt > 0;
+              const creditLimit = Number(c.creditLimit || 10000);
               return (
                 <div key={c._id} className="p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/40">
                   {/* Top: Avatar, Name & Current Debt */}
@@ -272,7 +304,7 @@ const KhataPage = () => {
                           hasDebt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'
                         }`}
                       >
-                        {formatCurrency(c.totalDebt)}
+                        {formatCurrency(currentDebt)}
                       </div>
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider ${
@@ -288,7 +320,7 @@ const KhataPage = () => {
                   <div className="flex items-center justify-between text-xs text-slate-400 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                     <span className="truncate mr-2">{c.address || 'No address registered'}</span>
                     <span className="font-mono flex-shrink-0">
-                      Limit: {formatCurrency(c.creditLimit || 10000)}
+                      Limit: {formatCurrency(creditLimit)}
                     </span>
                   </div>
 
@@ -327,7 +359,7 @@ const KhataPage = () => {
                     <button
                       onClick={() => {
                         setWasooliCustomer(c);
-                        setWasooliAmount(c.totalDebt > 0 ? c.totalDebt.toString() : '');
+                        setWasooliAmount(currentDebt > 0 ? currentDebt.toString() : '');
                       }}
                       className="py-2.5 px-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition flex items-center justify-center space-x-1 min-tap shadow-xs"
                       title="Record Payment Wasooli"
@@ -381,8 +413,10 @@ const KhataPage = () => {
                 </tr>
               ) : (
                 filteredCustomers.map((c) => {
-                  const lastTx = c.transactions?.[0];
-                  const hasDebt = c.totalDebt > 0;
+                  const lastTx = Array.isArray(c.transactions) ? c.transactions[0] : null;
+                  const currentDebt = Number(c.totalDebt ?? c.netBalance ?? 0);
+                  const hasDebt = currentDebt > 0;
+                  const creditLimit = Number(c.creditLimit || 0);
 
                   return (
                     <tr
@@ -408,7 +442,7 @@ const KhataPage = () => {
 
                       {/* Credit Limit */}
                       <td className="py-3 px-4 text-slate-500">
-                        {c.creditLimit > 0 ? formatCurrency(c.creditLimit) : 'Unlimited'}
+                        {creditLimit > 0 ? formatCurrency(creditLimit) : 'Unlimited'}
                       </td>
 
                       {/* Current Debt */}
@@ -418,9 +452,9 @@ const KhataPage = () => {
                             hasDebt ? 'text-red-600 dark:text-red-400' : 'text-emerald-600'
                           }`}
                         >
-                          {formatCurrency(c.totalDebt)}
+                          {formatCurrency(currentDebt)}
                         </div>
-                        {hasDebt && c.creditLimit > 0 && c.totalDebt >= c.creditLimit && (
+                        {hasDebt && creditLimit > 0 && currentDebt >= creditLimit && (
                           <span className="text-[9px] font-bold text-red-500 uppercase tracking-tight">
                             Limit Exceeded
                           </span>
@@ -478,7 +512,7 @@ const KhataPage = () => {
                           <button
                             onClick={() => {
                               setWasooliCustomer(c);
-                              setWasooliAmount(c.totalDebt > 0 ? c.totalDebt.toString() : '');
+                              setWasooliAmount(currentDebt > 0 ? currentDebt.toString() : '');
                             }}
                             className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 transition flex items-center space-x-1"
                             title="Record Payment Wasooli"
@@ -755,7 +789,7 @@ const KhataPage = () => {
                 Current Outstanding Udhar
               </span>
               <div className="text-2xl font-black text-red-600 dark:text-red-400">
-                {formatCurrency(statementCustomer?.totalDebt || 0)}
+                {formatCurrency(statementCustomer?.totalDebt ?? statementCustomer?.netBalance ?? 0)}
               </div>
               <div className="text-[10px] text-slate-400">
                 Credit Limit: {formatCurrency(statementCustomer?.creditLimit || 0)}
@@ -777,14 +811,14 @@ const KhataPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {!statementCustomer?.transactions || statementCustomer.transactions.length === 0 ? (
+                {!Array.isArray(statementCustomer?.transactions) || statementCustomer.transactions.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="py-8 text-center text-slate-400">
                       No ledger transactions recorded yet.
                     </td>
                   </tr>
                 ) : (
-                  statementCustomer.transactions.map((tx) => (
+                  (statementCustomer.transactions || []).map((tx) => (
                     <tr key={tx._id} className="hover:bg-slate-50 dark:hover:bg-slate-850">
                       <td className="py-2 px-3 text-slate-500 whitespace-nowrap">
                         {new Date(tx.date).toLocaleDateString('en-PK', {
@@ -839,7 +873,7 @@ const KhataPage = () => {
                 <span>Print Passbook Statement</span>
               </button>
 
-              {statementCustomer?.totalDebt > 0 && (
+              {(statementCustomer?.totalDebt ?? statementCustomer?.netBalance ?? 0) > 0 && (
                 planLimits?.allowWhatsApp ? (
                   <button
                     type="button"

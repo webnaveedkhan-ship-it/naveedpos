@@ -401,7 +401,7 @@ export default function BarcodeGeneratorPage() {
                 <span>Select from Product Catalog</span>
               </h3>
               <span className="text-xs text-slate-400">
-                {products.length} products available
+                {(products || []).length} products available
               </span>
             </div>
 

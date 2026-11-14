@@ -152,12 +152,14 @@ const MobileBottomNav = () => {
           /* MERCHANT RETAIL MOBILE BOTTOM BAR                          */
           /* ========================================================== */
           <>
-            {/* 1. Products */}
+            {/* 1. Products / Inventory */}
             <NavLink
-              to="/products"
+              to="/inventory"
               className={({ isActive }) =>
                 `flex-1 flex flex-col items-center justify-center py-1 min-tap transition-colors ${
-                  isActive ? 'text-emerald-400 font-bold' : 'text-slate-400 hover:text-slate-200'
+                  isActive || location.pathname.startsWith('/inventory') || location.pathname.startsWith('/products')
+                    ? 'text-emerald-400 font-bold'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`
               }
             >

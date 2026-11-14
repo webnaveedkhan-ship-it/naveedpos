@@ -312,9 +312,9 @@ const getKhataMetrics = async (req, res, next) => {
 
       let todayWasooli = 0;
       tenantCustomers.forEach((c) => {
-        c.transactions.forEach((tx) => {
-          if (tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
-            todayWasooli += tx.amount;
+        (c.transactions || []).forEach((tx) => {
+          if (tx && tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
+            todayWasooli += Number(tx.amount) || 0;
           }
         });
       });
@@ -342,9 +342,9 @@ const getKhataMetrics = async (req, res, next) => {
 
     let todayWasooli = 0;
     customers.forEach((c) => {
-      c.transactions.forEach((tx) => {
-        if (tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
-          todayWasooli += tx.amount;
+      (c.transactions || []).forEach((tx) => {
+        if (tx && tx.type === 'PAYMENT_RECEIVED' && new Date(tx.date) >= todayStart) {
+          todayWasooli += Number(tx.amount) || 0;
         }
       });
     });
