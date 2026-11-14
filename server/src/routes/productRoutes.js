@@ -10,6 +10,7 @@ const {
   updateProduct,
   deleteProduct,
   getCategories,
+  seedDummyProducts,
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const tenantGuard = require('../middleware/tenantGuard');
@@ -17,6 +18,10 @@ const upload = require('../middleware/uploadMiddleware');
 
 router.use(protect);
 router.use(tenantGuard);
+
+// Demo Products Seeder
+router.post('/seed-dummy', seedDummyProducts);
+router.post('/seed', seedDummyProducts);
 
 // Low Stock & Metadata
 router.get('/low-stock', getLowStockProducts);

@@ -4,6 +4,7 @@ const Tenant = require('../models/Tenant');
 const memoryStore = require('../config/memoryStore');
 const { getPlanLimits } = require('../config/plans');
 const { uploadToCloud } = require('../services/cloudStorageService');
+const { getDummyProducts } = require('../config/dummyProducts');
 
 const getProducts = async (req, res, next) => {
   try {
@@ -23,6 +24,15 @@ const getProducts = async (req, res, next) => {
       let filtered = memoryStore.products.filter(
         (p) => p.status === 'active' && (!tenantId || p.tenantId === tenantId)
       );
+
+      // Auto-populate dummy products if store has no inventory yet
+      if (filtered.length === 0 && !search && (!category || category === 'All') && lowStock !== 'true' && tenantId) {
+        const dummy = getDummyProducts(tenantId);
+        dummy.forEach((p) => memoryStore.products.push(p));
+        filtered = memoryStore.products.filter(
+          (p) => p.status === 'active' && (!tenantId || p.tenantId === tenantId)
+        );
+      }
 
       if (search && search.trim() !== '') {
         const q = search.trim().toLowerCase();
@@ -87,7 +97,22 @@ const getProducts = async (req, res, next) => {
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    const total = await Product.countDocuments(query);
+    let total = await Product.countDocuments(query);
+
+    // Auto-populate dummy products for newly created store if no inventory exists yet
+    if (total === 0 && !search && (!category || category === 'All') && lowStock !== 'true' && tenantId) {
+      try {
+        const dummy = getDummyProducts(tenantId).map((p) => {
+          const { _id, ...rest } = p;
+          return rest;
+        });
+        await Product.insertMany(dummy);
+        total = await Product.countDocuments(query);
+      } catch (e) {
+        console.warn('Auto-seed dummy products info:', e.message);
+      }
+    }
+
     const products = await Product.find(query)
       .sort({ title: 1 })
       .skip(skip)
@@ -538,6 +563,56 @@ const quickRestock = async (req, res, next) => {
   }
 };
 
+// @desc    Seed / Load authentic Pakistani demo retail products
+// @route   POST /api/products/seed-dummy
+// @access  Private (Store Owner / Admin)
+const seedDummyProducts = async (req, res, next) => {
+  try {
+    const tenantId = req.user.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ success: false, message: 'Tenant ID required for seeding demo catalog' });
+    }
+
+    if (global.useMemoryStore) {
+      const existing = memoryStore.products.filter(
+        (p) => p.status === 'active' && p.tenantId === tenantId
+      );
+      if (existing.length === 0) {
+        const dummy = getDummyProducts(tenantId);
+        dummy.forEach((p) => memoryStore.products.push(p));
+      }
+      const updated = memoryStore.products.filter(
+        (p) => p.status === 'active' && p.tenantId === tenantId
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Dummy retail products seeded successfully',
+        count: updated.length,
+        products: updated,
+      });
+    }
+
+    const existingCount = await Product.countDocuments({ tenantId, status: 'active' });
+    if (existingCount === 0) {
+      const dummy = getDummyProducts(tenantId).map((p) => {
+        const { _id, ...rest } = p;
+        return rest;
+      });
+      await Product.insertMany(dummy);
+    }
+
+    const currentProducts = await Product.find({ tenantId, status: 'active' });
+    res.status(200).json({
+      success: true,
+      message: 'Dummy retail products seeded successfully',
+      count: currentProducts.length,
+      products: currentProducts,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
@@ -548,4 +623,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   getCategories,
+  seedDummyProducts,
 };

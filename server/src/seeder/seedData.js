@@ -5,13 +5,19 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
+const Tenant = require('../models/Tenant');
+const { getDummyProducts } = require('../config/dummyProducts');
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const seedDatabase = async () => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/naveedpos';
+    const mongoUri =
+      process.env.MONGO_URI ||
+      process.env.MONGODB_URI ||
+      'mongodb://127.0.0.1:27017/naveedpos';
+
     console.log(`Connecting to MongoDB at: ${mongoUri}...`);
     await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 5000 });
     console.log('MongoDB Connected for Seeding.');
@@ -21,15 +27,40 @@ const seedDatabase = async () => {
     await Product.deleteMany();
     await Category.deleteMany();
     await Order.deleteMany();
+    await Tenant.deleteMany();
 
     console.log('Existing collections cleared.');
 
-    // 1. Seed Users
+    // 1. Seed Default Store Tenant (Al-Madina Superstore)
+    const defaultTenant = await Tenant.create({
+      name: 'Al-Madina Superstore (Lahore)',
+      slug: 'al-madina-lahore',
+      ownerEmail: 'admin@naveedpos.com',
+      phone: '+92 300 1234567',
+      city: 'Lahore',
+      status: 'active',
+      plan: 'standard',
+      subscriptionExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      settings: {
+        currency: 'PKR',
+        currencySymbol: 'Rs.',
+        taxRate: 0,
+        receiptHeader: 'Al-Madina Superstore Lahore',
+        address: 'Shop #14, Main Commercial Boulevard, Lahore',
+        receiptFooter: 'Thank You For Shopping at Al-Madina! Returns accepted within 7 days.',
+        phone: '+92 300 1234567',
+      },
+    });
+
+    console.log(`Tenant created: ${defaultTenant.name} [${defaultTenant._id}]`);
+
+    // 2. Seed Users
     const adminUser = await User.create({
       name: 'Naveed Admin',
       email: 'admin@naveedpos.com',
       password: 'admin123',
-      role: 'admin',
+      role: 'STORE_OWNER',
+      tenantId: defaultTenant._id,
       status: 'active',
       phone: '+92 300 1234567',
     });
@@ -38,209 +69,43 @@ const seedDatabase = async () => {
       name: 'Sarah Cashier',
       email: 'cashier@naveedpos.com',
       password: 'cashier123',
-      role: 'cashier',
+      role: 'CASHIER',
+      tenantId: defaultTenant._id,
       status: 'active',
       phone: '+92 321 9876543',
     });
 
     console.log('Users seeded:');
-    console.log(' - Admin: admin@naveedpos.com / admin123');
+    console.log(' - Store Owner: admin@naveedpos.com / admin123');
     console.log(' - Cashier: cashier@naveedpos.com / cashier123');
 
-    // 2. Seed Categories
+    // 3. Seed Categories
     const categoriesData = [
       { name: 'Beverages', color: '#0284c7', description: 'Soft drinks, juices, energy drinks and water' },
-      { name: 'Snacks & Bakery', color: '#ea580c', description: 'Chips, biscuits, fresh pastries and confectionery' },
-      { name: 'Dairy & Fresh', color: '#16a34a', description: 'Milk, yogurts, cheese and butter' },
-      { name: 'Electronics & Acc.', color: '#7c3aed', description: 'Cables, chargers, headphones and powerbanks' },
-      { name: 'Personal Care', color: '#db2777', description: 'Soaps, shampoos, oral care and sanitizers' },
       { name: 'Groceries & Pantry', color: '#ca8a04', description: 'Spices, grains, pasta, sauces and essentials' },
+      { name: 'Dairy & Fresh', color: '#16a34a', description: 'Milk, yogurts, cheese and butter' },
+      { name: 'Snacks & Bakery', color: '#ea580c', description: 'Chips, biscuits, fresh pastries and confectionery' },
+      { name: 'Garments & Footwear', color: '#ec4899', description: 'Kameez shalwar, shirts, shoes, and chappals' },
+      { name: 'Personal Care', color: '#db2777', description: 'Soaps, shampoos, oral care and sanitizers' },
+      { name: 'Electronics & Acc.', color: '#7c3aed', description: 'Cables, chargers, headphones and powerbanks' },
     ];
 
     await Category.insertMany(categoriesData);
     console.log('Categories seeded.');
 
-    // 3. Seed Products in Pakistani Rupee (PKR / Rs.)
-    const productsData = [
-      // Beverages
-      {
-        title: 'Artisan Cold Brew Coffee 330ml',
-        sku: 'BEV-001',
-        category: 'Beverages',
-        price: 450,
-        costPrice: 260,
-        stockQuantity: 4,
-        lowStockAlert: 8,
-        description: 'Smooth slow-steeped organic arabica cold brew',
-      },
-      {
-        title: 'Sparkling Mineral Water 500ml',
-        sku: 'BEV-002',
-        category: 'Beverages',
-        price: 120,
-        costPrice: 65,
-        stockQuantity: 48,
-        lowStockAlert: 10,
-        description: 'Naturally effervescent spring water',
-      },
-      {
-        title: 'Organic Green Tea 400ml',
-        sku: 'BEV-003',
-        category: 'Beverages',
-        price: 180,
-        costPrice: 95,
-        stockQuantity: 28,
-        lowStockAlert: 8,
-        description: 'Unsweetened Japanese sencha iced tea',
-      },
-      {
-        title: 'Fresh Squeezed Orange Juice 1L',
-        sku: 'BEV-004',
-        category: 'Beverages',
-        price: 550,
-        costPrice: 350,
-        stockQuantity: 15,
-        lowStockAlert: 5,
-        description: '100% pure squeezed valencia orange juice with pulp',
-      },
-      {
-        title: 'Energy Fuel Drink 250ml',
-        sku: 'BEV-005',
-        category: 'Beverages',
-        price: 320,
-        costPrice: 180,
-        stockQuantity: 36,
-        lowStockAlert: 10,
-        description: 'Citrus taurine & b-vitamin boost',
-      },
-
-      // Snacks & Bakery
-      {
-        title: 'Truffle Sea Salt Kettle Chips 150g',
-        sku: 'SNK-001',
-        category: 'Snacks & Bakery',
-        price: 290,
-        costPrice: 160,
-        stockQuantity: 22,
-        lowStockAlert: 6,
-        description: 'Crispy hand-cooked artisan potato chips',
-      },
-      {
-        title: 'Dark Chocolate Almond Bar 85g',
-        sku: 'SNK-002',
-        category: 'Snacks & Bakery',
-        price: 350,
-        costPrice: 210,
-        stockQuantity: 3,
-        lowStockAlert: 10,
-        description: '72% single-origin dark chocolate with roasted almonds',
-      },
-      {
-        title: 'Fresh Butter Croissant',
-        sku: 'SNK-003',
-        category: 'Snacks & Bakery',
-        price: 240,
-        costPrice: 110,
-        stockQuantity: 18,
-        lowStockAlert: 5,
-        description: 'Flaky baked daily French croissant',
-      },
-      {
-        title: 'Organic Trail Mix 200g',
-        sku: 'SNK-004',
-        category: 'Snacks & Bakery',
-        price: 650,
-        costPrice: 400,
-        stockQuantity: 14,
-        lowStockAlert: 5,
-        description: 'Cranberries, walnuts, cashews, and pumpkin seeds',
-      },
-
-      // Dairy & Fresh
-      {
-        title: 'Whole Organic Milk 1 Litre',
-        sku: 'DAR-001',
-        category: 'Dairy & Fresh',
-        price: 290,
-        costPrice: 240,
-        stockQuantity: 25,
-        lowStockAlert: 6,
-        description: 'Farm-fresh pasteurized organic whole milk',
-      },
-      {
-        title: 'Greek Yogurt Honey Vanilla 500g',
-        sku: 'DAR-002',
-        category: 'Dairy & Fresh',
-        price: 420,
-        costPrice: 280,
-        stockQuantity: 12,
-        lowStockAlert: 5,
-        description: 'High protein strained whole milk Greek yogurt',
-      },
-      {
-        title: 'Aged White Cheddar Cheese 250g',
-        sku: 'DAR-003',
-        category: 'Dairy & Fresh',
-        price: 850,
-        costPrice: 550,
-        stockQuantity: 2,
-        lowStockAlert: 5,
-        description: 'Sharp 18-month aged artisan white cheddar',
-      },
-
-      // Electronics & Accessories
-      {
-        title: 'Braided Fast USB-C Cable 2M',
-        sku: 'ELC-001',
-        category: 'Electronics & Acc.',
-        price: 1150,
-        costPrice: 550,
-        stockQuantity: 30,
-        lowStockAlert: 5,
-        description: '100W PD nylon braided durable charging cable',
-      },
-      {
-        title: 'Compact 30W Dual USB Wall Charger',
-        sku: 'ELC-002',
-        category: 'Electronics & Acc.',
-        price: 2400,
-        costPrice: 1400,
-        stockQuantity: 8,
-        lowStockAlert: 4,
-        description: 'GaN high efficiency fast wall adapter',
-      },
-
-      // Personal Care
-      {
-        title: 'Moisturizing Aloe Vera Hand Wash 300ml',
-        sku: 'PER-001',
-        category: 'Personal Care',
-        price: 450,
-        costPrice: 250,
-        stockQuantity: 24,
-        lowStockAlert: 6,
-        description: 'Hydrating antibacterial botanical liquid soap',
-      },
-
-      // Groceries & Pantry
-      {
-        title: 'Extra Virgin Olive Oil Cold Pressed 750ml',
-        sku: 'GRO-001',
-        category: 'Groceries & Pantry',
-        price: 2900,
-        costPrice: 1950,
-        stockQuantity: 11,
-        lowStockAlert: 4,
-        description: 'First cold pressed Mediterranean olive oil',
-      },
-    ];
+    // 4. Seed Products in Pakistani Rupee (PKR / Rs.)
+    const productsData = getDummyProducts(defaultTenant._id).map((p) => {
+      const { _id, ...rest } = p;
+      return rest;
+    });
 
     const seededProducts = await Product.insertMany(productsData);
-    console.log(`Products seeded: ${seededProducts.length} items.`);
+    console.log(`Products seeded: ${seededProducts.length} items (with variants & image URLs).`);
 
-    // 4. Seed sample completed orders
+    // 5. Seed sample completed order
     const sampleOrders = [
       {
+        tenantId: defaultTenant._id,
         orderNumber: 'NPOS-261107-1011',
         cashier: cashierUser._id,
         cashierName: cashierUser.name,
@@ -252,7 +117,7 @@ const seedDatabase = async () => {
             price: seededProducts[0].price,
             costPrice: seededProducts[0].costPrice,
             quantity: 2,
-            subtotal: 900,
+            subtotal: seededProducts[0].price * 2,
           },
           {
             product: seededProducts[5]._id,
@@ -261,18 +126,18 @@ const seedDatabase = async () => {
             price: seededProducts[5].price,
             costPrice: seededProducts[5].costPrice,
             quantity: 1,
-            subtotal: 290,
+            subtotal: seededProducts[5].price,
           },
         ],
-        subtotal: 1190,
-        taxRate: 5,
-        taxAmount: 59.5,
+        subtotal: seededProducts[0].price * 2 + seededProducts[5].price,
+        taxRate: 0,
+        taxAmount: 0,
         discountType: 'fixed',
         discountValue: 0,
         discountAmount: 0,
-        grandTotal: 1249.5,
+        grandTotal: seededProducts[0].price * 2 + seededProducts[5].price,
         paymentMethod: 'cash',
-        paymentDetails: { cashTendered: 1500, changeGiven: 250.5 },
+        paymentDetails: { cashTendered: 3000, changeGiven: 3000 - (seededProducts[0].price * 2 + seededProducts[5].price) },
         customer: { name: 'Muhammad Ali', phone: '+92-300-5551234' },
         createdAt: new Date(),
         status: 'completed',

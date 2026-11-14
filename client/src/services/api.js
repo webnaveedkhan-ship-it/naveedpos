@@ -804,7 +804,21 @@ export const productService = {
       return {
         data: {
           success: true,
-          categories: ['Beverages', 'Snacks & Bakery', 'Dairy & Fresh', 'Groceries & Pantry', 'Electronics & Acc.'],
+          categories: ['Beverages', 'Snacks & Bakery', 'Dairy & Fresh', 'Groceries & Pantry', 'Electronics & Acc.', 'Garments & Footwear', 'Personal Care'],
+        },
+      };
+    }
+  },
+
+  seedDummyProducts: async () => {
+    try {
+      return await api.post('/products/seed-dummy');
+    } catch {
+      return {
+        data: {
+          success: true,
+          message: 'Dummy products loaded',
+          products: localState.products,
         },
       };
     }

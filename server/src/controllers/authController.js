@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Tenant = require('../models/Tenant');
 const memoryStore = require('../config/memoryStore');
 const { getPlanLimits } = require('../config/plans');
+const { getDummyProducts } = require('../config/dummyProducts');
 
 const generateToken = (id) => {
   return jwt.sign(
@@ -475,28 +476,9 @@ const registerStoreAndTrial = async (req, res, next) => {
       memoryStore.users.push(newUser);
 
       // Pre-seed starter retail products for this tenant
-      const defaultProducts = [
-        { title: 'Super Basmati Rice 5kg', sku: 'RICE-001', category: 'Grocery', price: 1850, costPrice: 1600, stockQuantity: 30, lowStockAlert: 5 },
-        { title: 'Dalda Cooking Oil 1L Pouch', sku: 'OIL-002', category: 'Grocery', price: 540, costPrice: 490, stockQuantity: 45, lowStockAlert: 8 },
-        { title: 'Tapal Danedar Tea 430g', sku: 'TEA-003', category: 'Beverages', price: 680, costPrice: 590, stockQuantity: 25, lowStockAlert: 5 },
-        { title: 'Olpers Milk 1 Litre', sku: 'MILK-004', category: 'Dairy', price: 290, costPrice: 260, stockQuantity: 50, lowStockAlert: 10 },
-      ];
-      defaultProducts.forEach((p, idx) => {
-        memoryStore.products.push({
-          _id: `prod_${Date.now()}_${idx}`,
-          tenantId,
-          title: p.title,
-          sku: p.sku,
-          category: p.category,
-          price: p.price,
-          costPrice: p.costPrice,
-          stockQuantity: p.stockQuantity,
-          lowStockAlert: p.lowStockAlert,
-          image: '',
-          description: '',
-          status: 'active',
-          createdAt: new Date(),
-        });
+      const starterProducts = getDummyProducts(tenantId);
+      starterProducts.forEach((p) => {
+        memoryStore.products.push(p);
       });
 
       return sendTokenResponse(newUser, 201, res, { tenant: newTenant });
@@ -542,15 +524,14 @@ const registerStoreAndTrial = async (req, res, next) => {
       isActive: true,
     });
 
-    // Seed starter products safely
+    // Seed starter retail products safely
     try {
       const Product = require('../models/Product');
-      await Product.insertMany([
-        { tenantId: tenant._id, title: 'Super Basmati Rice 5kg', sku: 'RICE-001', category: 'Grocery', price: 1850, sellingPrice: 1850, costPrice: 1600, stockQuantity: 30, lowStockAlert: 5, lowStockThreshold: 5 },
-        { tenantId: tenant._id, title: 'Dalda Cooking Oil 1L Pouch', sku: 'OIL-002', category: 'Grocery', price: 540, sellingPrice: 540, costPrice: 490, stockQuantity: 45, lowStockAlert: 8, lowStockThreshold: 8 },
-        { tenantId: tenant._id, title: 'Tapal Danedar Tea 430g', sku: 'TEA-003', category: 'Beverages', price: 680, sellingPrice: 680, costPrice: 590, stockQuantity: 25, lowStockAlert: 5, lowStockThreshold: 5 },
-        { tenantId: tenant._id, title: 'Olpers Milk 1 Litre', sku: 'MILK-004', category: 'Dairy', price: 290, sellingPrice: 290, costPrice: 260, stockQuantity: 50, lowStockAlert: 10, lowStockThreshold: 10 },
-      ]);
+      const starterProducts = getDummyProducts(tenant._id).map((p) => {
+        const { _id, ...rest } = p;
+        return rest;
+      });
+      await Product.insertMany(starterProducts);
     } catch (seedErr) {
       console.warn('Initial product seeding warning (ignored):', seedErr.message);
     }

@@ -16,6 +16,7 @@ import {
   ArrowUpDown,
   CheckCircle,
   Barcode,
+  Zap,
 } from 'lucide-react';
 
 const InventoryPage = () => {
@@ -37,6 +38,7 @@ const InventoryPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [seedingDemo, setSeedingDemo] = useState(false);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -44,6 +46,21 @@ const InventoryPage = () => {
   };
 
   const safeProducts = Array.isArray(products) ? products : [];
+
+  const handleSeedDummyProducts = async () => {
+    try {
+      setSeedingDemo(true);
+      const res = await productService.seedDummyProducts();
+      showNotification(res.data?.message || '27 Pakistani retail demo products loaded successfully');
+      await fetchProducts();
+      await fetchCategories();
+    } catch (err) {
+      console.error('Failed to load dummy products:', err);
+      showNotification('Failed to load demo products', 'error');
+    } finally {
+      setSeedingDemo(false);
+    }
+  };
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -147,16 +164,29 @@ const InventoryPage = () => {
           </Link>
 
           {isAdmin && (
-            <button
-              onClick={() => {
-                setEditingProduct(null);
-                setIsModalOpen(true);
-              }}
-              className="min-h-[44px] flex items-center space-x-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.97] text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/20 transition"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Product</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleSeedDummyProducts}
+                disabled={seedingDemo}
+                className="min-h-[44px] flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-xl shadow-xs active:scale-[0.97] transition disabled:opacity-50"
+                title="Load 27 authentic Pakistani retail demo products across all categories"
+              >
+                <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>{seedingDemo ? 'Loading...' : '⚡ Load Demo Products'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setIsModalOpen(true);
+                }}
+                className="min-h-[44px] flex items-center space-x-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:scale-[0.97] text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/20 transition"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Product</span>
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -238,17 +268,28 @@ const InventoryPage = () => {
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No products found</p>
               <p className="text-xs text-slate-500 mt-1 mb-3">Add items to manage catalog and start billing</p>
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setIsModalOpen(true);
-                  }}
-                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Product</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <button
+                    type="button"
+                    onClick={handleSeedDummyProducts}
+                    disabled={seedingDemo}
+                    className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5 disabled:opacity-50"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span>{seedingDemo ? 'Loading...' : '⚡ Load Demo Products'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setIsModalOpen(true);
+                    }}
+                    className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -351,17 +392,28 @@ const InventoryPage = () => {
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Your store catalog is empty</p>
                       <p className="text-xs text-slate-500 mt-0.5 mb-3">Add your first product to begin billing in POS</p>
                       {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingProduct(null);
-                            setIsModalOpen(true);
-                          }}
-                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Add First Product</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={handleSeedDummyProducts}
+                            disabled={seedingDemo}
+                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5 disabled:opacity-50"
+                          >
+                            <Zap className="w-4 h-4" />
+                            <span>{seedingDemo ? 'Loading...' : '⚡ Load Demo Products'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingProduct(null);
+                              setIsModalOpen(true);
+                            }}
+                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Product</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </td>
