@@ -110,8 +110,10 @@ app.use('/api/super-admin', require('./routes/superAdminRoutes'));
 app.use('/api/broadcast', require('./routes/broadcastRoutes'));
 app.use('/api/tenants', require('./routes/tenantRoutes'));
 app.use('/api/khata', require('./routes/khataRoutes'));
+app.use('/api/customers', require('./routes/khataRoutes')); // Alias route for direct customers queries
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/sales', require('./routes/orderRoutes')); // Alias route for direct sales queries
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));

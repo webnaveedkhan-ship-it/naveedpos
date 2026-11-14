@@ -19,4 +19,9 @@ router.route('/customers').get(getCustomers).post(createCustomer);
 router.route('/customers/:id').get(getCustomerById);
 router.post('/customers/:id/payment', recordKhataPayment);
 
+// Direct root routes for /api/customers mount
+router.route('/').get(getCustomers).post(createCustomer);
+router.route('/:id').get(getCustomerById);
+router.post('/:id/payment', recordKhataPayment);
+
 module.exports = router;

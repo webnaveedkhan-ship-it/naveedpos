@@ -7,16 +7,26 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const User = require('../models/User');
 
-const SUPERADMIN_NAME = process.env.SUPERADMIN_NAME || 'Naveed (Platform Owner)';
-const SUPERADMIN_EMAIL = (process.env.SUPERADMIN_EMAIL || 'naveed@naveedpos.com').toLowerCase().trim();
-const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD || 'admin123';
+const SUPERADMIN_NAME = process.env.ADMIN_NAME || process.env.SUPERADMIN_NAME || 'Naveed (Platform Owner)';
+const SUPERADMIN_EMAIL = (
+  process.env.ADMIN_EMAIL ||
+  process.env.SUPERADMIN_EMAIL ||
+  'naveed@naveedpos.com'
+).toLowerCase().trim();
+const SUPERADMIN_PASSWORD =
+  process.env.ADMIN_PASSWORD ||
+  process.env.SUPERADMIN_PASSWORD ||
+  'admin123';
 
 async function seedSuperAdmin() {
   console.log('\n======================================================');
   console.log('🛡️  NaveedPOS SaaS: Safe Super Admin CLI Provisioner');
   console.log('======================================================\n');
 
-  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/naveedpos';
+  const mongoUri =
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    'mongodb://127.0.0.1:27017/naveedpos';
 
   try {
     console.log(`📡 Connecting to MongoDB at: ${mongoUri.replace(/:([^:@]{4})[^:@]*@/, ':$1***@')}...`);

@@ -3,7 +3,7 @@ import Modal from '../common/Modal';
 import ProductImageUploader from '../common/ProductImageUploader';
 import { formatCurrency } from '../../utils/currency';
 import { useAuth } from '../../context/AuthContext';
-import { AlertCircle, Percent, DollarSign, Lock } from 'lucide-react';
+import { AlertCircle, Percent, DollarSign, Lock, Plus, Trash2, Layers } from 'lucide-react';
 
 const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => {
   const { planLimits } = useAuth();
@@ -23,6 +23,15 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
     cartonPrice: '',
     description: '',
   });
+  const [variants, setVariants] = useState([]);
+  const [newVariant, setNewVariant] = useState({
+    size: '',
+    color: '',
+    sku: '',
+    price: '',
+    stockQuantity: '',
+  });
+  const [showVariantSection, setShowVariantSection] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +52,9 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
         cartonPrice: product.cartonPrice?.toString() || '',
         description: product.description || '',
       });
+      const prodVariants = Array.isArray(product.variants) ? product.variants : [];
+      setVariants(prodVariants);
+      setShowVariantSection(prodVariants.length > 0);
       setImageUrl(product.image || '');
     } else {
       setFormData({
@@ -59,8 +71,11 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
         cartonPrice: '',
         description: '',
       });
+      setVariants([]);
+      setShowVariantSection(false);
       setImageUrl('');
     }
+    setNewVariant({ size: '', color: '', sku: '', price: '', stockQuantity: '' });
     setErrorMsg('');
   }, [product, isOpen, categories]);
 
@@ -74,10 +89,31 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
+  const handleAddVariant = () => {
+    if (!newVariant.size && !newVariant.color) {
+      return;
     }
+    const cleanSize = (newVariant.size || '').trim();
+    const cleanColor = (newVariant.color || '').trim();
+    const autoSku = newVariant.sku.trim() || `${formData.sku || 'SKU'}-${cleanSize}-${cleanColor}`.replace(/[^a-zA-Z0-9-]/g, '-');
+
+    setVariants((prev) => [
+      ...prev,
+      {
+        size: cleanSize,
+        color: cleanColor,
+        sku: autoSku.toUpperCase(),
+        price: newVariant.price ? Number(newVariant.price) : Number(formData.price || 0),
+        costPrice: Number(formData.costPrice || 0),
+        stockQuantity: newVariant.stockQuantity ? Number(newVariant.stockQuantity) : Number(formData.stockQuantity || 10),
+      },
+    ]);
+
+    setNewVariant({ size: '', color: '', sku: '', price: '', stockQuantity: '' });
+  };
+
+  const handleRemoveVariant = (index) => {
+    setVariants((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const handleSubmit = async (e) => {
@@ -98,6 +134,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
       if (imageUrl) {
         data.append('image', imageUrl);
       }
+      data.append('variants', JSON.stringify(variants));
 
       await onSave(data, product?._id);
       onClose();
@@ -341,6 +378,133 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
               />
             </div>
           </div>
+        </div>
+
+        {/* Size & Color Variants Section (Garments & Footwear) */}
+        <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-1.5">
+              <Layers className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Size &amp; Color Variants (Garments, Shoes &amp; Retail)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowVariantSection(!showVariantSection)}
+              className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              {showVariantSection ? 'Hide Variants' : `+ Manage Variants (${variants.length})`}
+            </button>
+          </div>
+
+          {showVariantSection && (
+            <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              {/* New Variant Input Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
+                    Size
+                  </label>
+                  <input
+                    type="text"
+                    value={newVariant.size}
+                    onChange={(e) => setNewVariant({ ...newVariant, size: e.target.value })}
+                    placeholder="e.g. 42 or XL"
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
+                    Color
+                  </label>
+                  <input
+                    type="text"
+                    value={newVariant.color}
+                    onChange={(e) => setNewVariant({ ...newVariant, color: e.target.value })}
+                    placeholder="e.g. Black"
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
+                    Price (Rs.)
+                  </label>
+                  <input
+                    type="number"
+                    value={newVariant.price}
+                    onChange={(e) => setNewVariant({ ...newVariant, price: e.target.value })}
+                    placeholder={formData.price || 'Price'}
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-slate-900 dark:text-white font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
+                    Stock
+                  </label>
+                  <input
+                    type="number"
+                    value={newVariant.stockQuantity}
+                    onChange={(e) => setNewVariant({ ...newVariant, stockQuantity: e.target.value })}
+                    placeholder={formData.stockQuantity || 'Stock'}
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1 flex items-end">
+                  <button
+                    type="button"
+                    onClick={handleAddVariant}
+                    className="w-full py-1.5 px-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg transition flex items-center justify-center space-x-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Existing Variants List */}
+              {variants.length > 0 && (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {variants.map((v, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs"
+                    >
+                      <div className="flex items-center space-x-2 truncate">
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {v.size ? `Size: ${v.size}` : ''}
+                        </span>
+                        {v.color && (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-[10px] text-slate-600 dark:text-slate-300">
+                            {v.color}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {v.sku}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(v.price || formData.price)}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          ({v.stockQuantity !== undefined ? v.stockQuantity : formData.stockQuantity} in stock)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveVariant(idx)}
+                          className="p-1 text-slate-400 hover:text-red-500 rounded transition"
+                          title="Remove variant"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Product Image Uploader with Computer File Picker & Preview */}

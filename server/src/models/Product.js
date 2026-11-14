@@ -83,6 +83,16 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    variants: [
+      {
+        size: { type: String, default: '' },
+        color: { type: String, default: '' },
+        sku: { type: String, default: '' },
+        price: { type: Number },
+        costPrice: { type: Number, default: 0 },
+        stockQuantity: { type: Number, default: 0 },
+      },
+    ],
     status: {
       type: String,
       enum: ['active', 'archived'],

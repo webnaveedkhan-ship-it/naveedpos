@@ -402,11 +402,11 @@ const getOrders = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      count: orders.length,
-      total,
-      totalPages: Math.ceil(total / limitNum) || 1,
+      count: (orders || []).length,
+      total: total || 0,
+      totalPages: Math.ceil((total || 0) / limitNum) || 1,
       currentPage: pageNum,
-      orders,
+      orders: orders || [],
     });
   } catch (error) {
     next(error);

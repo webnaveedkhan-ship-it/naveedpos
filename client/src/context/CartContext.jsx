@@ -16,20 +16,37 @@ export const CartProvider = ({ children }) => {
     }, 3500);
   };
 
-  // Add product to cart with strict Stock Guard & Multi-Unit Support
-  const addToCart = (product, quantityToAdd = 1, pricingMode = 'unit') => {
-    if (!product || product.stockQuantity <= 0) {
+  // Add product to cart with strict Stock Guard, Multi-Unit & Variant Support
+  const addToCart = (product, quantityToAdd = 1, pricingMode = 'unit', selectedVariant = null) => {
+    if (!product) return false;
+
+    const variantStock = selectedVariant && selectedVariant.stockQuantity !== undefined
+      ? Number(selectedVariant.stockQuantity)
+      : Number(product.stockQuantity);
+
+    if (variantStock <= 0) {
       showAlert(`"${product?.title || 'Item'}" is currently out of stock!`, 'error');
       return false;
     }
 
     const isCarton = pricingMode === 'carton' && Number(product.cartonPrice) > 0;
-    const effectiveUnitPrice = isCarton ? Number(product.cartonPrice) : Number(product.price);
+    const basePrice = selectedVariant?.price ? Number(selectedVariant.price) : Number(product.price);
+    const effectiveUnitPrice = isCarton ? Number(product.cartonPrice) : basePrice;
     const parsedQty = parseFloat(quantityToAdd) || 1;
+
+    const variantLabel = selectedVariant
+      ? [selectedVariant.size ? `Size: ${selectedVariant.size}` : '', selectedVariant.color ? `Color: ${selectedVariant.color}` : ''].filter(Boolean).join(' • ')
+      : '';
+
+    const effectiveTitle = variantLabel ? `${product.title} (${variantLabel})` : product.title;
+    const effectiveSku = selectedVariant?.sku || product.sku;
+    const effectiveId = selectedVariant
+      ? `${product._id}_${selectedVariant.size || ''}_${selectedVariant.color || ''}`
+      : product._id;
 
     setCartItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
-        (item) => item.product === product._id && item.pricingMode === pricingMode
+        (item) => item.product === effectiveId && item.pricingMode === pricingMode
       );
 
       if (existingIndex > -1) {
@@ -41,9 +58,9 @@ export const CartProvider = ({ children }) => {
           ? newQty * (Number(product.cartonSize) || 1)
           : newQty;
 
-        if (totalStockUnitsRequired > product.stockQuantity) {
+        if (totalStockUnitsRequired > variantStock) {
           showAlert(
-            `Stock Limit Reached: Cannot add more than ${product.stockQuantity} units of "${product.title}".`,
+            `Stock Limit Reached: Cannot add more than ${variantStock} units of "${effectiveTitle}".`,
             'error'
           );
           return prevItems;
@@ -61,9 +78,9 @@ export const CartProvider = ({ children }) => {
           ? parsedQty * (Number(product.cartonSize) || 1)
           : parsedQty;
 
-        if (totalStockUnitsRequired > product.stockQuantity) {
+        if (totalStockUnitsRequired > variantStock) {
           showAlert(
-            `Stock Limit: Only ${product.stockQuantity} available for "${product.title}".`,
+            `Stock Limit: Only ${variantStock} available for "${effectiveTitle}".`,
             'error'
           );
           return prevItems;
@@ -72,18 +89,20 @@ export const CartProvider = ({ children }) => {
         return [
           ...prevItems,
           {
-            product: product._id,
-            title: product.title,
-            sku: product.sku,
-            price: Number(product.price),
+            product: effectiveId,
+            originalProductId: product._id,
+            title: effectiveTitle,
+            sku: effectiveSku,
+            price: basePrice,
             costPrice: Number(product.costPrice || 0),
             unitPrice: effectiveUnitPrice,
-            stockQuantity: product.stockQuantity,
+            stockQuantity: variantStock,
             unitType: product.unitType || 'piece',
             allowFractional: Boolean(product.allowFractional),
             cartonSize: Number(product.cartonSize) || 1,
             cartonPrice: Number(product.cartonPrice) || 0,
             pricingMode: isCarton ? 'carton' : 'unit',
+            variant: selectedVariant,
             quantity: parsedQty,
             subtotal: Number((parsedQty * effectiveUnitPrice).toFixed(2)),
           },

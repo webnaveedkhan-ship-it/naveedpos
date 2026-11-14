@@ -43,17 +43,22 @@ const OrdersPage = () => {
       };
 
       const res = await orderService.getOrders(params);
-      if (res.data.success) {
-        setOrders(res.data.orders);
-        setTotalPages(res.data.totalPages);
-        setTotalOrders(res.data.total);
+      if (res.data?.success) {
+        setOrders(Array.isArray(res.data.orders) ? res.data.orders : []);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalOrders(res.data.total || 0);
+      } else {
+        setOrders([]);
       }
     } catch (err) {
       console.error('Failed to fetch orders:', err);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   }, [page, searchTerm, paymentFilter, startDate, endDate]);
+
+  const safeOrders = Array.isArray(orders) ? orders : [];
 
   useEffect(() => {
     fetchOrders();
@@ -162,12 +167,12 @@ const OrdersPage = () => {
               <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
               Loading orders history...
             </div>
-          ) : orders.length === 0 ? (
+          ) : safeOrders.length === 0 ? (
             <div className="py-12 text-center text-slate-400 p-4">
               No orders match your filter criteria.
             </div>
           ) : (
-            orders.map((ord) => (
+            safeOrders.map((ord) => (
               <div key={ord._id} className="p-3.5 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -246,14 +251,14 @@ const OrdersPage = () => {
                     Loading orders history...
                   </td>
                 </tr>
-              ) : orders.length === 0 ? (
+              ) : safeOrders.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-12 text-center text-slate-400">
                     No orders match your filter criteria.
                   </td>
                 </tr>
               ) : (
-                orders.map((ord) => (
+                safeOrders.map((ord) => (
                   <tr
                     key={ord._id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition"

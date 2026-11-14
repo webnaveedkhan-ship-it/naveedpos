@@ -47,8 +47,8 @@ const getCustomers = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      count: customers.length,
-      customers,
+      count: (customers || []).length,
+      customers: customers || [],
     });
   } catch (error) {
     next(error);

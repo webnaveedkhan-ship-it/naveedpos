@@ -109,6 +109,9 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     return '';
   });
   const [shopName, setShopName] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [signUpPhone, setSignUpPhone] = useState('');
+  const [signUpEmail, setSignUpEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
 
@@ -255,8 +258,8 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   // 2. Submit Start Free Trial (Create Store)
   const handleSignUpSubmit = async (e) => {
     e.preventDefault();
-    if (!shopName.trim() || !identifier.trim() || !password) {
-      setErrorMsg('Please complete all required fields.');
+    if (!shopName.trim() || !ownerName.trim() || !signUpPhone.trim() || !signUpEmail.trim() || !password) {
+      setErrorMsg('Please complete all 5 fields (Store Name, Owner Name, Mobile Number, Email, Password).');
       return;
     }
 
@@ -265,20 +268,22 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       return;
     }
 
-    const isEmailInput = validateEmail(identifier);
-    const cleanPhone = identifier.replace(/[- ]/g, '');
-    const isPhoneInput = validatePakistaniPhone(cleanPhone);
+    if (!validateEmail(signUpEmail)) {
+      setErrorMsg('Please enter a valid store email address.');
+      return;
+    }
 
-    if (!isEmailInput && !isPhoneInput) {
-      setErrorMsg('Please enter a valid email address or Pakistani mobile (03XX-XXXXXXX).');
+    const cleanPhone = signUpPhone.replace(/[- ]/g, '');
+    if (!validatePakistaniPhone(cleanPhone)) {
+      setErrorMsg('Please enter a valid Pakistani mobile number (03XX-XXXXXXX).');
       return;
     }
 
     const payload = {
       shopName: shopName.trim(),
-      ownerName: `${shopName.trim()} Owner`,
-      email: isEmailInput ? identifier.trim().toLowerCase() : `${cleanPhone}@store.naveedpos.com`,
-      phone: isPhoneInput ? cleanPhone : '',
+      ownerName: ownerName.trim(),
+      email: signUpEmail.trim().toLowerCase(),
+      phone: cleanPhone || '',
       city: 'Islamabad',
       password,
     };
@@ -829,58 +834,101 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                 /* ------------------------------------------------------- */
                 /* PUBLIC START FREE TRIAL FORM                           */
                 /* ------------------------------------------------------- */
-                <form onSubmit={handleSignUpSubmit} className="space-y-3">
-                  {/* Store Name Input */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Store Name <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Store className="w-4 h-4" />
+                <form onSubmit={handleSignUpSubmit} className="space-y-2.5">
+                  {/* Grid 1: Store Name & Owner Name */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Store Name Input */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Store Name <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                          <Store className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="text"
+                          value={shopName}
+                          onChange={(e) => setShopName(e.target.value)}
+                          placeholder="e.g. Shaheen Store"
+                          required
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        value={shopName}
-                        onChange={(e) => setShopName(e.target.value)}
-                        placeholder="e.g. Al Madina Supermart"
-                        required
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
-                      />
+                    </div>
+
+                    {/* Owner Name Input */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Owner Name <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                          <User className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="text"
+                          value={ownerName}
+                          onChange={(e) => setOwnerName(e.target.value)}
+                          placeholder="e.g. Muhammad Naveed"
+                          required
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Email or Mobile Input */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                      Email or Mobile (03XX-XXXXXXX) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Mail className="w-4 h-4" />
+                  {/* Grid 2: Mobile Number & Store Email */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Mobile Number Input */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Mobile Number <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                          <Phone className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="tel"
+                          value={signUpPhone}
+                          onChange={(e) => setSignUpPhone(formatPakistaniPhone(e.target.value))}
+                          placeholder="0300-1234567"
+                          required
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        value={identifier}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setIdentifier(val.startsWith('03') ? formatPakistaniPhone(val) : val);
-                        }}
-                        placeholder="owner@myshop.com or 0300-1234567"
-                        required
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
-                      />
+                    </div>
+
+                    {/* Store Email Input */}
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Store Email <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                          <Mail className="w-3.5 h-3.5" />
+                        </div>
+                        <input
+                          type="email"
+                          value={signUpEmail}
+                          onChange={(e) => setSignUpEmail(e.target.value)}
+                          placeholder="owner@myshop.com"
+                          required
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   {/* Password Input */}
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
                       Create Password <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <Lock className="w-4 h-4" />
+                        <Lock className="w-3.5 h-3.5" />
                       </div>
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -889,15 +937,15 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="Minimum 6 characters"
                         required
                         autoComplete="new-password"
-                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
+                        className="w-full pl-8 pr-10 py-2 bg-slate-50 dark:bg-[#0B132B]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none min-h-[44px]"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-white transition focus:outline-none min-h-[40px]"
                         tabIndex="-1"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -906,7 +954,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-h-[44px]"
+                    className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5 group disabled:opacity-50 min-h-[42px] mt-1"
                   >
                     {isLoading ? (
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
@@ -920,7 +968,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   </button>
 
                   {/* Switch to Sign In */}
-                  <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                  <div className="pt-1.5 text-center text-xs text-slate-500 dark:text-slate-400">
                     Already have a registered account?{' '}
                     <button
                       type="button"

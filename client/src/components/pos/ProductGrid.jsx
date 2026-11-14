@@ -8,7 +8,9 @@ import {
   ShoppingCart,
   CheckCircle,
   Sparkles,
+  Layers,
 } from 'lucide-react';
+import Modal from '../common/Modal';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency } from '../../utils/currency';
 
@@ -49,6 +51,7 @@ const ProductGrid = ({
   const [searchTerm, setSearchTerm] = useState('');
   const { addToCart, cartItems, totalItemCount, grandTotal } = useCart();
   const [addedEffectId, setAddedEffectId] = useState(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState(null);
 
   const safeProducts = Array.isArray(products) ? products : [];
   const safeCategories = Array.isArray(categories) ? categories : ['All'];
@@ -61,18 +64,39 @@ const ProductGrid = ({
         activeCategory === 'All' || product.category === activeCategory;
       const matchesSearch =
         (product.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase());
+        (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (Array.isArray(product.variants) &&
+          product.variants.some(
+            (v) =>
+              (v.size || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (v.color || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (v.sku || '').toLowerCase().includes(searchTerm.toLowerCase())
+          ));
       return matchesCategory && matchesSearch;
     });
   }, [safeProducts, activeCategory, searchTerm]);
 
-  // Handle 1-tap add to cart with feedback
+  // Handle 1-tap add to cart with feedback (or open variant selector if variants exist)
   const handleItemTap = (product) => {
+    if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      setSelectedProductForVariants(product);
+      return;
+    }
     if (product.stockQuantity <= 0) return;
     addToCart(product, 1);
     playBeep();
     setAddedEffectId(product._id);
     setTimeout(() => setAddedEffectId(null), 300);
+  };
+
+  const handleSelectVariant = (product, variant) => {
+    const stock = variant.stockQuantity !== undefined ? Number(variant.stockQuantity) : Number(product.stockQuantity);
+    if (stock <= 0) return;
+    addToCart(product, 1, 'unit', variant);
+    playBeep();
+    setAddedEffectId(product._id);
+    setTimeout(() => setAddedEffectId(null), 300);
+    setSelectedProductForVariants(null);
   };
 
   // Handle barcode scanner Enter or fast SKU match
@@ -87,7 +111,22 @@ const ProductGrid = ({
           handleItemTap(exactSkuMatch);
           setSearchTerm('');
         }
-      } else if (filteredProducts.length === 1) {
+        return;
+      }
+
+      // Check variant barcode / SKU
+      for (const prod of safeProducts) {
+        if (prod.variants && Array.isArray(prod.variants)) {
+          const matchedVariant = prod.variants.find((v) => (v.sku || '').toUpperCase() === trimmed);
+          if (matchedVariant) {
+            handleSelectVariant(prod, matchedVariant);
+            setSearchTerm('');
+            return;
+          }
+        }
+      }
+
+      if (filteredProducts.length === 1) {
         if (filteredProducts[0].stockQuantity > 0) {
           handleItemTap(filteredProducts[0]);
           setSearchTerm('');
@@ -239,13 +278,20 @@ const ProductGrid = ({
                     />
 
                     {/* Distinct Size / Variant pill if present */}
-                    {(product.size || product.variant || product.unitType) && (
+                    {product.variants && Array.isArray(product.variants) && product.variants.length > 0 ? (
+                      <div className="absolute top-2 left-2">
+                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-indigo-950/90 text-indigo-300 border border-indigo-700/80 backdrop-blur-sm flex items-center space-x-1">
+                          <Layers className="w-2.5 h-2.5 mr-0.5" />
+                          <span>{product.variants.length} Variants</span>
+                        </span>
+                      </div>
+                    ) : (product.size || product.variant || product.unitType) ? (
                       <div className="absolute top-2 left-2">
                         <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-950/85 text-emerald-300 border border-slate-700/80 backdrop-blur-sm">
                           {product.size ? `Size: ${product.size}` : product.unitType || 'Pcs'}
                         </span>
                       </div>
-                    )}
+                    ) : null}
 
                     {/* In-cart count badge */}
                     {inCartQty > 0 && (
@@ -302,6 +348,92 @@ const ProductGrid = ({
           </div>
         )}
       </div>
+
+      {/* Quick Size / Color Variant Picker Modal for Garments & Footwear */}
+      {selectedProductForVariants && (
+        <Modal
+          isOpen={!!selectedProductForVariants}
+          onClose={() => setSelectedProductForVariants(null)}
+          title={`Select Variant: ${selectedProductForVariants.title}`}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3 p-3 bg-slate-900 border border-slate-800 rounded-xl">
+              <img
+                src={selectedProductForVariants.image || DEFAULT_FALLBACK_IMAGE}
+                alt={selectedProductForVariants.title}
+                className="w-12 h-12 rounded-lg object-cover bg-slate-800"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-bold text-white truncate">
+                  {selectedProductForVariants.title}
+                </h4>
+                <p className="text-[10px] text-slate-400">
+                  Base Price: {formatCurrency(selectedProductForVariants.price)} • {selectedProductForVariants.category}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Available Sizes &amp; Colors ({selectedProductForVariants.variants?.length || 0})
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+                {(selectedProductForVariants.variants || []).map((variant, idx) => {
+                  const varStock = variant.stockQuantity !== undefined ? Number(variant.stockQuantity) : Number(selectedProductForVariants.stockQuantity);
+                  const isVarOut = varStock <= 0;
+                  const varPrice = variant.price ? Number(variant.price) : Number(selectedProductForVariants.price);
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={isVarOut}
+                      onClick={() => handleSelectVariant(selectedProductForVariants, variant)}
+                      className={`p-3 rounded-xl border text-left transition flex flex-col justify-between active:scale-95 ${
+                        isVarOut
+                          ? 'opacity-40 border-slate-800 bg-slate-900 cursor-not-allowed'
+                          : 'border-slate-800 hover:border-emerald-500 bg-slate-900/90 hover:bg-slate-850 cursor-pointer shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-black text-xs text-white">
+                          {variant.size ? `Size: ${variant.size}` : 'Standard'}
+                        </span>
+                        {variant.color && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                            {variant.color}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
+                        <span className="font-extrabold text-emerald-400">
+                          {formatCurrency(varPrice)}
+                        </span>
+                        <span className={`text-[10px] ${isVarOut ? 'text-rose-400 font-bold' : 'text-slate-400'}`}>
+                          {isVarOut ? 'Out of stock' : `${varStock} in stock`}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedProductForVariants(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

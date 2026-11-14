@@ -220,6 +220,16 @@ const createProduct = async (req, res, next) => {
       });
     }
 
+    let variants = [];
+    if (req.body.variants) {
+      try {
+        variants = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
+        if (!Array.isArray(variants)) variants = [];
+      } catch (e) {
+        variants = [];
+      }
+    }
+
     if (global.useMemoryStore) {
       const exists = memoryStore.products.find(
         (p) => p.sku === sku.toUpperCase() && p.tenantId === tenantId
@@ -252,6 +262,7 @@ const createProduct = async (req, res, next) => {
         cartonPrice: Number(cartonPrice) || 0,
         image: imagePath,
         description: description || '',
+        variants: variants || [],
         status: 'active',
         createdAt: new Date(),
       };
@@ -291,6 +302,11 @@ const createProduct = async (req, res, next) => {
       cartonPrice: Number(cartonPrice) || 0,
       image: imagePath,
       description: description || '',
+      variants: variants || [],
+    });
+      cartonPrice: Number(cartonPrice) || 0,
+      image: imagePath,
+      description: description || '',
     });
 
     res.status(201).json({ success: true, message: 'Product created successfully', product });
@@ -302,6 +318,16 @@ const createProduct = async (req, res, next) => {
 const updateProduct = async (req, res, next) => {
   try {
     const tenantId = req.user.tenantId;
+
+    let variants = undefined;
+    if (req.body.variants !== undefined) {
+      try {
+        variants = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
+        if (!Array.isArray(variants)) variants = [];
+      } catch (e) {
+        variants = [];
+      }
+    }
 
     if (global.useMemoryStore) {
       const index = memoryStore.products.findIndex((p) => p._id === req.params.id && p.tenantId === tenantId);
@@ -318,6 +344,7 @@ const updateProduct = async (req, res, next) => {
           req.body.stockQuantity !== undefined ? Number(req.body.stockQuantity) : existing.stockQuantity,
         lowStockAlert:
           req.body.lowStockAlert !== undefined ? Number(req.body.lowStockAlert) : existing.lowStockAlert,
+        variants: variants !== undefined ? variants : existing.variants || [],
         image: existing.image,
       };
       if (req.file) {
@@ -340,6 +367,7 @@ const updateProduct = async (req, res, next) => {
     if (updateData.costPrice !== undefined) updateData.costPrice = Number(updateData.costPrice);
     if (updateData.stockQuantity !== undefined) updateData.stockQuantity = Number(updateData.stockQuantity);
     if (updateData.lowStockAlert !== undefined) updateData.lowStockAlert = Number(updateData.lowStockAlert);
+    if (variants !== undefined) updateData.variants = variants;
 
     if (req.file) {
       const uploaded = await uploadToCloud(req.file.buffer, req.file.originalname, req.file.mimetype, 'products');

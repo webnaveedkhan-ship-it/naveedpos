@@ -24,15 +24,20 @@ const StaffPage = () => {
     try {
       setLoading(true);
       const res = await userService.getUsers();
-      if (res.data.success) {
-        setUsers(res.data.users);
+      if (res.data?.success) {
+        setUsers(Array.isArray(res.data.users) ? res.data.users : []);
+      } else {
+        setUsers([]);
       }
     } catch (err) {
       console.error('Failed to load users:', err);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const safeUsers = Array.isArray(users) ? users : [];
 
   useEffect(() => {
     fetchUsers();
@@ -135,8 +140,14 @@ const StaffPage = () => {
                     Loading staff members...
                   </td>
                 </tr>
+              ) : safeUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-12 text-center text-slate-400">
+                    No additional staff members added yet.
+                  </td>
+                </tr>
               ) : (
-                users.map((staff) => (
+                safeUsers.map((staff) => (
                   <tr
                     key={staff._id}
                     className="hover:bg-slate-50/80 dark:hover:bg-slate-850/60 transition"

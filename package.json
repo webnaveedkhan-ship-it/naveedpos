@@ -11,7 +11,8 @@
     "client": "npm --prefix client run dev",
     "server": "npm --prefix server run dev",
     "start": "node server/src/server.js",
-    "seed": "npm --prefix server run seed"
+    "seed": "npm --prefix server run seed",
+    "seed:admin": "npm --prefix server run seed:admin"
   },
   "keywords": ["pos", "point-of-sale", "mern", "express", "react", "tailwind"],
   "author": "NaveedPOS",
