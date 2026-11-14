@@ -441,17 +441,65 @@ export const khataService = {
         customer.totalDebt = newBalance;
         customer.netBalance = newBalance;
         customer.lastPaymentDate = new Date().toISOString();
-        if (!Array.isArray(customer.transactions)) customer.transactions = [];
-        customer.transactions.unshift({
+        const tx = {
           _id: `tx_${Date.now()}`,
           type: 'PAYMENT_RECEIVED',
           amount: payAmount,
           balanceAfter: newBalance,
+          paymentMethod: paymentData.paymentMethod || 'CASH',
           notes: paymentData.notes || 'Payment Received (Wasooli)',
           date: new Date().toISOString(),
-        });
+        };
+        if (!Array.isArray(customer.transactions)) customer.transactions = [];
+        customer.transactions.unshift(tx);
+        return {
+          data: {
+            success: true,
+            customer,
+            transaction: tx,
+            previousDebt: prevDebt,
+            currentDebt: newBalance,
+          },
+        };
       }
-      return { data: { success: true, customer } };
+      return { data: { success: false, message: 'Customer not found' } };
+    }
+  },
+
+  recordUdhar: async (id, udharData) => {
+    try {
+      return await api.post(`/khata/customers/${id}/udhar`, udharData);
+    } catch {
+      const customer = (localState.khatas || []).find((k) => k._id === id);
+      if (customer) {
+        const udharAmount = Number(udharData.amount || 0);
+        customer.totalUdhar = (Number(customer.totalUdhar) || 0) + udharAmount;
+        const prevDebt = Number(customer.totalDebt ?? customer.netBalance ?? 0);
+        const newBalance = prevDebt + udharAmount;
+        customer.totalDebt = newBalance;
+        customer.netBalance = newBalance;
+        const tx = {
+          _id: `tx_${Date.now()}`,
+          type: 'UDHAR_GIVEN',
+          amount: udharAmount,
+          balanceAfter: newBalance,
+          orderNumber: udharData.orderNumber || `UDH-${Date.now().toString().slice(-6)}`,
+          notes: udharData.notes || 'New Udhar Given / Note Paid',
+          date: new Date().toISOString(),
+        };
+        if (!Array.isArray(customer.transactions)) customer.transactions = [];
+        customer.transactions.unshift(tx);
+        return {
+          data: {
+            success: true,
+            customer,
+            transaction: tx,
+            previousDebt: prevDebt,
+            currentDebt: newBalance,
+          },
+        };
+      }
+      return { data: { success: false, message: 'Customer not found' } };
     }
   },
 };

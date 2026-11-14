@@ -232,32 +232,37 @@ const recordKhataPayment = async (req, res, next) => {
     }
 
     if (global.useMemoryStore) {
+      const matchTenant = (k) => k && (k.tenantId || '').toString() === tenantId.toString();
       const customer = memoryStore.khatas.find(
-        (k) => k._id === req.params.id && k.tenantId === tenantId
+        (k) => k._id === req.params.id && matchTenant(k)
       );
       if (!customer) {
         return res.status(404).json({ success: false, message: 'Customer not found' });
       }
 
-      const newBalance = Number((customer.totalDebt - paymentAmount).toFixed(2));
+      const prevDebt = Number(customer.totalDebt || 0);
+      const newBalance = Number(Math.max(0, prevDebt - paymentAmount).toFixed(2));
       const tx = {
         _id: `tx_${Date.now()}`,
         type: 'PAYMENT_RECEIVED',
         amount: paymentAmount,
         balanceAfter: newBalance,
         notes: notes || `Payment Received via ${paymentMethod} (Wasooli)`,
+        paymentMethod,
         date: new Date(),
         recordedBy: req.user._id,
         recordedByName: req.user.name,
       };
 
       customer.totalDebt = newBalance;
+      if (!Array.isArray(customer.transactions)) customer.transactions = [];
       customer.transactions.unshift(tx);
 
       return res.status(200).json({
         success: true,
         message: `Wasooli of Rs. ${paymentAmount.toLocaleString()} recorded successfully`,
         transaction: tx,
+        previousDebt: prevDebt,
         currentDebt: newBalance,
         customer,
       });
@@ -268,12 +273,14 @@ const recordKhataPayment = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
-    const newBalance = Number((customer.totalDebt - paymentAmount).toFixed(2));
+    const prevDebt = Number(customer.totalDebt || 0);
+    const newBalance = Number(Math.max(0, prevDebt - paymentAmount).toFixed(2));
     const tx = {
       type: 'PAYMENT_RECEIVED',
       amount: paymentAmount,
       balanceAfter: newBalance,
       notes: notes || `Payment Received via ${paymentMethod} (Wasooli)`,
+      paymentMethod,
       date: new Date(),
       recordedBy: req.user._id,
       recordedByName: req.user.name,
@@ -287,6 +294,95 @@ const recordKhataPayment = async (req, res, next) => {
       success: true,
       message: `Wasooli of Rs. ${paymentAmount.toLocaleString()} recorded successfully`,
       transaction: tx,
+      previousDebt: prevDebt,
+      currentDebt: newBalance,
+      customer,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Record new udhar / credit given to customer (Not Paid)
+// @route   POST /api/khata/customers/:id/udhar
+// @access  Private (Store Admin, Cashier)
+const recordUdharGiven = async (req, res, next) => {
+  try {
+    const { amount, notes, orderNumber } = req.body;
+    const tenantId = req.user.tenantId;
+
+    const udharAmount = Number(amount);
+    if (!udharAmount || udharAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid positive udhar credit amount',
+      });
+    }
+
+    if (global.useMemoryStore) {
+      const matchTenant = (k) => k && (k.tenantId || '').toString() === tenantId.toString();
+      const customer = memoryStore.khatas.find(
+        (k) => k._id === req.params.id && matchTenant(k)
+      );
+      if (!customer) {
+        return res.status(404).json({ success: false, message: 'Khata customer not found' });
+      }
+
+      const prevDebt = Number(customer.totalDebt || 0);
+      const newBalance = Number((prevDebt + udharAmount).toFixed(2));
+      const tx = {
+        _id: `tx_${Date.now()}`,
+        type: 'UDHAR_GIVEN',
+        amount: udharAmount,
+        balanceAfter: newBalance,
+        orderNumber: orderNumber || `UDH-${Date.now().toString().slice(-6)}`,
+        notes: notes || 'New Udhar Given / Note Paid',
+        date: new Date(),
+        recordedBy: req.user._id,
+        recordedByName: req.user.name,
+      };
+
+      customer.totalDebt = newBalance;
+      if (!Array.isArray(customer.transactions)) customer.transactions = [];
+      customer.transactions.unshift(tx);
+
+      return res.status(200).json({
+        success: true,
+        message: `Udhar of Rs. ${udharAmount.toLocaleString()} recorded successfully for ${customer.name}`,
+        transaction: tx,
+        previousDebt: prevDebt,
+        currentDebt: newBalance,
+        customer,
+      });
+    }
+
+    const customer = await CustomerKhata.findOne({ _id: req.params.id, tenantId });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Khata customer not found' });
+    }
+
+    const prevDebt = Number(customer.totalDebt || 0);
+    const newBalance = Number((prevDebt + udharAmount).toFixed(2));
+    const tx = {
+      type: 'UDHAR_GIVEN',
+      amount: udharAmount,
+      balanceAfter: newBalance,
+      orderNumber: orderNumber || `UDH-${Date.now().toString().slice(-6)}`,
+      notes: notes || 'New Udhar Given / Note Paid',
+      date: new Date(),
+      recordedBy: req.user._id,
+      recordedByName: req.user.name,
+    };
+
+    customer.totalDebt = newBalance;
+    customer.transactions.unshift(tx);
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Udhar of Rs. ${udharAmount.toLocaleString()} recorded successfully for ${customer.name}`,
+      transaction: tx,
+      previousDebt: prevDebt,
       currentDebt: newBalance,
       customer,
     });
@@ -373,5 +469,6 @@ module.exports = {
   getCustomerById,
   createCustomer,
   recordKhataPayment,
+  recordUdharGiven,
   getKhataMetrics,
 };

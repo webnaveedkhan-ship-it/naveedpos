@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { getWhatsAppReminderUrl } from '../utils/whatsapp';
 import StatCard from '../components/common/StatCard';
 import Modal from '../components/common/Modal';
+import KhataReceiptModal from '../components/khata/KhataReceiptModal';
 import {
   BookOpen,
   UserPlus,
@@ -20,6 +21,8 @@ import {
   BadgeAlert,
   MessageSquare,
   Lock,
+  Receipt,
+  Plus,
 } from 'lucide-react';
 
 const KhataPage = () => {
@@ -50,6 +53,17 @@ const KhataPage = () => {
   const [wasooliMode, setWasooliMode] = useState('CASH');
   const [wasooliNotes, setWasooliNotes] = useState('');
   const [wasooliSubmitting, setWasooliSubmitting] = useState(false);
+
+  // Record Udhar / Note Paid Modal
+  const [udharCustomer, setUdharCustomer] = useState(null);
+  const [udharAmount, setUdharAmount] = useState('');
+  const [udharOrderNumber, setUdharOrderNumber] = useState('');
+  const [udharNotes, setUdharNotes] = useState('');
+  const [udharSubmitting, setUdharSubmitting] = useState(false);
+
+  // Digital Khata Receipt Modal (Wasooli & Udhar Parchi)
+  const [activeReceipt, setActiveReceipt] = useState(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   // Passbook / Statement Modal
   const [statementCustomer, setStatementCustomer] = useState(null);
@@ -131,17 +145,72 @@ const KhataPage = () => {
     }
   };
 
+  const safeCustomers = Array.isArray(customers) ? customers : [];
+  const filteredCustomers = safeCustomers.filter((c) => {
+    if (!c) return false;
+    const debt = Number(c.totalDebt ?? c.netBalance ?? 0);
+    if (debtFilter === 'debtors') return debt > 0;
+    if (debtFilter === 'cleared') return debt <= 0;
+    return true;
+  });
+
+  const handleOpenWasooli = (customer = null) => {
+    if (customer && customer._id) {
+      setWasooliCustomer(customer);
+      const debt = Number(customer.totalDebt ?? customer.netBalance ?? 0);
+      setWasooliAmount(debt > 0 ? debt.toString() : '');
+    } else {
+      const defaultCust = safeCustomers.find((c) => Number(c?.totalDebt ?? c?.netBalance ?? 0) > 0) || safeCustomers[0] || null;
+      setWasooliCustomer(defaultCust || { _id: '' });
+      const debt = Number(defaultCust?.totalDebt ?? defaultCust?.netBalance ?? 0);
+      setWasooliAmount(debt > 0 ? debt.toString() : '');
+    }
+    setWasooliNotes('');
+    setWasooliMode('CASH');
+  };
+
   const handleRecordWasooli = async (e) => {
     e.preventDefault();
-    if (!wasooliCustomer) return;
-    setWasooliSubmitting(true);
+    const customerId = wasooliCustomer?._id;
+    if (!customerId) {
+      alert('Please select a customer for Wasooli');
+      return;
+    }
+    const currentSelected = safeCustomers.find((c) => c._id === customerId) || wasooliCustomer;
+    const payAmount = Number(wasooliAmount);
+    if (!payAmount || payAmount <= 0) {
+      alert('Please enter a valid wasooli amount');
+      return;
+    }
 
+    setWasooliSubmitting(true);
     try {
-      await khataService.recordPayment(wasooliCustomer._id, {
-        amount: Number(wasooliAmount),
+      const res = await khataService.recordPayment(customerId, {
+        amount: payAmount,
         notes: wasooliNotes,
         paymentMethod: wasooliMode,
       });
+
+      const prevDebt = res?.data?.previousDebt ?? Number(currentSelected?.totalDebt ?? currentSelected?.netBalance ?? 0);
+      const newDebt = res?.data?.currentDebt ?? Math.max(0, prevDebt - payAmount);
+      const tx = res?.data?.transaction;
+
+      setActiveReceipt({
+        type: 'PAYMENT_RECEIVED',
+        receiptNumber: tx?.receiptNumber || tx?._id || `WAS-${Date.now().toString().slice(-6)}`,
+        date: tx?.date || new Date().toISOString(),
+        customerName: currentSelected.name,
+        customerPhone: currentSelected.phone,
+        amount: payAmount,
+        paymentMethod: wasooliMode,
+        previousDebt: prevDebt,
+        balanceAfter: newDebt,
+        currentDebt: newDebt,
+        notes: wasooliNotes || 'Payment Received (Wasooli)',
+        storeName: storeName,
+      });
+      setIsReceiptOpen(true);
+
       setWasooliCustomer(null);
       setWasooliAmount('');
       setWasooliNotes('');
@@ -153,20 +222,115 @@ const KhataPage = () => {
     }
   };
 
-  const safeCustomers = Array.isArray(customers) ? customers : [];
-  const filteredCustomers = safeCustomers.filter((c) => {
-    if (!c) return false;
-    const debt = Number(c.totalDebt ?? c.netBalance ?? 0);
-    if (debtFilter === 'debtors') return debt > 0;
-    if (debtFilter === 'cleared') return debt <= 0;
-    return true;
-  });
+  const handleOpenUdhar = (customer = null) => {
+    if (customer && customer._id) {
+      setUdharCustomer(customer);
+    } else {
+      const defaultCust = safeCustomers[0] || null;
+      setUdharCustomer(defaultCust || { _id: '' });
+    }
+    setUdharAmount('');
+    setUdharOrderNumber('');
+    setUdharNotes('');
+  };
+
+  const handleRecordUdhar = async (e) => {
+    e.preventDefault();
+    const customerId = udharCustomer?._id;
+    if (!customerId) {
+      alert('Please select a customer to give Udhar');
+      return;
+    }
+    const currentSelected = safeCustomers.find((c) => c._id === customerId) || udharCustomer;
+    const creditAmount = Number(udharAmount);
+    if (!creditAmount || creditAmount <= 0) {
+      alert('Please enter a valid udhar amount');
+      return;
+    }
+
+    setUdharSubmitting(true);
+    try {
+      const res = await khataService.recordUdhar(customerId, {
+        amount: creditAmount,
+        orderNumber: udharOrderNumber,
+        notes: udharNotes,
+      });
+
+      const prevDebt = res?.data?.previousDebt ?? Number(currentSelected?.totalDebt ?? currentSelected?.netBalance ?? 0);
+      const newDebt = res?.data?.currentDebt ?? (prevDebt + creditAmount);
+      const tx = res?.data?.transaction;
+
+      setActiveReceipt({
+        type: 'UDHAR_GIVEN',
+        receiptNumber: tx?.orderNumber || tx?.receiptNumber || tx?._id || `UDH-${Date.now().toString().slice(-6)}`,
+        date: tx?.date || new Date().toISOString(),
+        customerName: currentSelected.name,
+        customerPhone: currentSelected.phone,
+        amount: creditAmount,
+        paymentMethod: 'UDHAR_CREDIT',
+        previousDebt: prevDebt,
+        balanceAfter: newDebt,
+        currentDebt: newDebt,
+        notes: udharNotes || 'New Udhar Given / Note Paid',
+        orderNumber: udharOrderNumber,
+        storeName: storeName,
+      });
+      setIsReceiptOpen(true);
+
+      setUdharCustomer(null);
+      setUdharAmount('');
+      setUdharOrderNumber('');
+      setUdharNotes('');
+      fetchKhataData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to record udhar / note paid');
+    } finally {
+      setUdharSubmitting(false);
+    }
+  };
+
+  const handleOpenTxReceipt = (tx) => {
+    if (!tx || !statementCustomer) return;
+    const isPayment = tx.type === 'PAYMENT_RECEIVED' || tx.type === 'WASOOLI';
+    const txAmount = Number(tx.amount || 0);
+    const balanceAfter = Number(tx.balanceAfter || 0);
+    const prevDebt = isPayment
+      ? balanceAfter + txAmount
+      : Math.max(0, balanceAfter - txAmount);
+
+    setActiveReceipt({
+      type: tx.type,
+      receiptNumber: tx.orderNumber || tx.receiptNumber || tx._id || `TX-${Date.now().toString().slice(-6)}`,
+      date: tx.date || new Date().toISOString(),
+      customerName: statementCustomer.name,
+      customerPhone: statementCustomer.phone,
+      amount: txAmount,
+      paymentMethod: tx.paymentMethod || (isPayment ? 'CASH' : 'UDHAR_CREDIT'),
+      previousDebt: prevDebt,
+      balanceAfter: balanceAfter,
+      currentDebt: balanceAfter,
+      notes: tx.notes || (isPayment ? 'Wasooli Payment' : 'Udhar Given'),
+      orderNumber: tx.orderNumber,
+      storeName: storeName,
+    });
+    setIsReceiptOpen(true);
+  };
 
   const parsedWasooliAmount = parseFloat(wasooliAmount) || 0;
-  const wasooliCustomerDebt = Number(wasooliCustomer?.totalDebt ?? wasooliCustomer?.netBalance ?? 0);
+  const currentWasooliCust = safeCustomers.find((c) => c._id === wasooliCustomer?._id) || wasooliCustomer;
+  const wasooliCustomerDebt = Number(currentWasooliCust?.totalDebt ?? currentWasooliCust?.netBalance ?? 0);
   const remainingAfterWasooli = wasooliCustomer
     ? Math.max(0, wasooliCustomerDebt - parsedWasooliAmount)
     : 0;
+
+  const parsedUdharAmount = parseFloat(udharAmount) || 0;
+  const currentUdharCust = safeCustomers.find((c) => c._id === udharCustomer?._id) || udharCustomer;
+  const udharCustomerDebt = Number(currentUdharCust?.totalDebt ?? currentUdharCust?.netBalance ?? 0);
+  const totalAfterUdhar = currentUdharCust
+    ? udharCustomerDebt + parsedUdharAmount
+    : 0;
+  const udharCreditLimit = Number(currentUdharCust?.creditLimit || 0);
+  const isLimitExceeded = udharCreditLimit > 0 && totalAfterUdhar > udharCreditLimit;
 
   return (
     <div className="flex-1 p-6 overflow-y-auto bg-slate-50 dark:bg-slate-950 space-y-6">
@@ -182,16 +346,39 @@ const KhataPage = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setAddError('');
-            setIsAddModalOpen(true);
-          }}
-          className="flex items-center space-x-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/20 transition self-start sm:self-auto"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>New Khata Account</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick 1-Tap Record Udhar */}
+          <button
+            onClick={() => handleOpenUdhar(null)}
+            className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/20 transition min-tap"
+            title="Record credit / udhar given to a customer"
+          >
+            <ArrowUpRight className="w-4 h-4" />
+            <span>+ Udhar (ادھار دیا)</span>
+          </button>
+
+          {/* Quick 1-Tap Record Wasooli */}
+          <button
+            onClick={() => handleOpenWasooli(null)}
+            className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md shadow-emerald-500/20 transition min-tap"
+            title="Record cash or online collection from a customer"
+          >
+            <ArrowDownLeft className="w-4 h-4" />
+            <span>Wasooli (وصولی)</span>
+          </button>
+
+          {/* Open New Khata Account */}
+          <button
+            onClick={() => {
+              setAddError('');
+              setIsAddModalOpen(true);
+            }}
+            className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/20 transition min-tap"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>New Account</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 Khata Summary Stat Cards */}
@@ -324,51 +511,29 @@ const KhataPage = () => {
                     </span>
                   </div>
 
-                  {/* Mobile 1-Tap Action Buttons */}
-                  <div className="grid grid-cols-3 gap-2 pt-0.5">
-                    {/* 1-Tap WhatsApp Reminder */}
-                    {hasDebt ? (
-                      planLimits?.allowWhatsApp ? (
-                        <button
-                          onClick={() => {
-                            const url = getWhatsAppReminderUrl(c, storeName);
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                          }}
-                          className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 min-tap shadow-xs"
-                          title="Send WhatsApp Udhar Reminder"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span>WhatsApp</span>
-                        </button>
-                      ) : (
-                        <button
-                          disabled
-                          className="py-2.5 px-2 bg-slate-800 text-slate-500 rounded-xl text-xs font-medium flex items-center justify-center space-x-1 opacity-50 cursor-not-allowed"
-                        >
-                          <Lock className="w-3.5 h-3.5" />
-                          <span>WhatsApp</span>
-                        </button>
-                      )
-                    ) : (
-                      <div className="py-2.5 px-2 rounded-xl text-[11px] font-medium text-slate-500 flex items-center justify-center border border-slate-800">
-                        No Udhar
-                      </div>
-                    )}
-
-                    {/* 1-Tap Wasooli (Record Cash Received) */}
+                  {/* Mobile 1-Tap Action Buttons (4-action grid) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                    {/* 1. Record Udhar (Give Credit) */}
                     <button
-                      onClick={() => {
-                        setWasooliCustomer(c);
-                        setWasooliAmount(currentDebt > 0 ? currentDebt.toString() : '');
-                      }}
-                      className="py-2.5 px-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black transition flex items-center justify-center space-x-1 min-tap shadow-xs"
-                      title="Record Payment Wasooli"
+                      onClick={() => handleOpenUdhar(c)}
+                      className="py-2.5 px-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 min-tap shadow-xs"
+                      title="Give Credit / Udhar (ادھار دیا)"
+                    >
+                      <ArrowUpRight className="w-4 h-4" />
+                      <span>+ Udhar</span>
+                    </button>
+
+                    {/* 2. Record Wasooli (Payment Received) */}
+                    <button
+                      onClick={() => handleOpenWasooli(c)}
+                      className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black transition flex items-center justify-center space-x-1 min-tap shadow-xs"
+                      title="Record Payment Wasooli (وصولی)"
                     >
                       <ArrowDownLeft className="w-4 h-4" />
                       <span>Wasooli</span>
                     </button>
 
-                    {/* Passbook / Statement */}
+                    {/* 3. Passbook / Ledger */}
                     <button
                       onClick={() => setStatementCustomer(c)}
                       className="py-2.5 px-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 min-tap"
@@ -377,6 +542,35 @@ const KhataPage = () => {
                       <FileText className="w-4 h-4" />
                       <span>Passbook</span>
                     </button>
+
+                    {/* 4. WhatsApp Reminder */}
+                    {hasDebt ? (
+                      planLimits?.allowWhatsApp ? (
+                        <button
+                          onClick={() => {
+                            const url = getWhatsAppReminderUrl(c, storeName);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
+                          className="py-2.5 px-2 bg-green-600 hover:bg-green-500 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1 min-tap shadow-xs"
+                          title="Send WhatsApp Udhar Reminder"
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span>WhatsApp</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="py-2.5 px-2 bg-slate-100 dark:bg-slate-850 text-slate-400 rounded-xl text-xs font-medium flex items-center justify-center space-x-1 opacity-50 cursor-not-allowed"
+                        >
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </button>
+                      )
+                    ) : (
+                      <div className="py-2.5 px-2 rounded-xl text-[11px] font-medium text-slate-400 flex items-center justify-center border border-slate-200 dark:border-slate-800">
+                        Nil Baqaya
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -509,11 +703,19 @@ const KhataPage = () => {
                             )
                           )}
 
+                          {/* 1-Tap Record Udhar */}
                           <button
-                            onClick={() => {
-                              setWasooliCustomer(c);
-                              setWasooliAmount(currentDebt > 0 ? currentDebt.toString() : '');
-                            }}
+                            onClick={() => handleOpenUdhar(c)}
+                            className="px-2.5 py-1 text-xs font-bold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 transition flex items-center space-x-1"
+                            title="Record new Udhar / Credit given"
+                          >
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                            <span>+ Udhar</span>
+                          </button>
+
+                          {/* 1-Tap Wasooli */}
+                          <button
+                            onClick={() => handleOpenWasooli(c)}
                             className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 transition flex items-center space-x-1"
                             title="Record Payment Wasooli"
                           >
@@ -521,6 +723,7 @@ const KhataPage = () => {
                             <span>Wasooli</span>
                           </button>
 
+                          {/* Passbook Statement */}
                           <button
                             onClick={() => setStatementCustomer(c)}
                             className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center space-x-1"
@@ -648,23 +851,52 @@ const KhataPage = () => {
       <Modal
         isOpen={!!wasooliCustomer}
         onClose={() => setWasooliCustomer(null)}
-        title={`Record Payment (Wasooli) - ${wasooliCustomer?.name}`}
+        title={`Record Payment (Wasooli) - ${currentWasooliCust?.name || 'Select Customer'}`}
         maxWidth="max-w-md"
       >
         <form onSubmit={handleRecordWasooli} className="space-y-4">
-          <div className="p-3 bg-slate-900 text-white rounded-2xl flex items-center justify-between">
+          {/* Customer Selection if opened from header without customer */}
+          {(!wasooliCustomer?._id || !safeCustomers.some((c) => c._id === wasooliCustomer?._id)) && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-                Current Total Udhar Due
-              </span>
-              <div className="text-2xl font-black text-red-400">
-                {formatCurrency(wasooliCustomer?.totalDebt || 0)}
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Select Customer *
+              </label>
+              <select
+                required
+                value={wasooliCustomer?._id || ''}
+                onChange={(e) => {
+                  const selected = safeCustomers.find((c) => c._id === e.target.value);
+                  setWasooliCustomer(selected || null);
+                  const debt = Number(selected?.totalDebt ?? selected?.netBalance ?? 0);
+                  setWasooliAmount(debt > 0 ? debt.toString() : '');
+                }}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              >
+                <option value="">-- Choose Customer to Receive Payment --</option>
+                {safeCustomers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} ({c.phone || 'No phone'}) — Baqaya: Rs. {Number(c.totalDebt ?? c.netBalance ?? 0).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {currentWasooliCust?._id && (
+            <div className="p-3.5 bg-slate-900 text-white rounded-2xl flex items-center justify-between border border-slate-800 shadow-sm">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+                  Current Total Udhar Due
+                </span>
+                <div className="text-2xl font-black text-red-400">
+                  {formatCurrency(wasooliCustomerDebt)}
+                </div>
+              </div>
+              <div className="text-right text-xs text-slate-400 font-mono">
+                {currentWasooliCust?.phone || 'No phone'}
               </div>
             </div>
-            <div className="text-right text-xs text-slate-400 font-mono">
-              {wasooliCustomer?.phone}
-            </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -690,10 +922,10 @@ const KhataPage = () => {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setWasooliAmount(wasooliCustomer?.totalDebt?.toString() || '0')}
+                onClick={() => setWasooliAmount(wasooliCustomerDebt > 0 ? wasooliCustomerDebt.toString() : '0')}
                 className="px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
               >
-                Full Due ({formatCurrency(wasooliCustomer?.totalDebt || 0)})
+                Full Due ({formatCurrency(wasooliCustomerDebt)})
               </button>
               {PAKISTANI_BANKNOTES.map((b) => (
                 <button
@@ -742,7 +974,7 @@ const KhataPage = () => {
               type="text"
               value={wasooliNotes}
               onChange={(e) => setWasooliNotes(e.target.value)}
-              placeholder="e.g. Received via Raast payment"
+              placeholder="e.g. Received via Raast payment / Counter cash"
               className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
             />
           </div>
@@ -757,10 +989,166 @@ const KhataPage = () => {
             </button>
             <button
               type="submit"
-              disabled={wasooliSubmitting || parsedWasooliAmount <= 0}
+              disabled={wasooliSubmitting || parsedWasooliAmount <= 0 || !wasooliCustomer?._id}
               className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition disabled:opacity-50"
             >
               {wasooliSubmitting ? 'Recording...' : 'Confirm Wasooli'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal: Record Udhar Given (Note Paid / ادھار دیا) */}
+      <Modal
+        isOpen={!!udharCustomer}
+        onClose={() => setUdharCustomer(null)}
+        title={`Record Udhar / Note Paid (ادھار دیا) - ${currentUdharCust?.name || 'Select Customer'}`}
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleRecordUdhar} className="space-y-4">
+          {/* Customer Selection if opened from header without customer */}
+          {(!udharCustomer?._id || !safeCustomers.some((c) => c._id === udharCustomer?._id)) && (
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Select Customer *
+              </label>
+              <select
+                required
+                value={udharCustomer?._id || ''}
+                onChange={(e) => {
+                  const selected = safeCustomers.find((c) => c._id === e.target.value);
+                  setUdharCustomer(selected || null);
+                }}
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              >
+                <option value="">-- Choose Customer to Give Credit --</option>
+                {safeCustomers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} ({c.phone || 'No phone'}) — Purana Baqaya: Rs. {Number(c.totalDebt ?? c.netBalance ?? 0).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {currentUdharCust?._id && (
+            <div className="p-3.5 bg-slate-900 text-white rounded-2xl flex items-center justify-between border border-slate-800 shadow-sm">
+              <div>
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+                  Purana Baqaya (Current Due)
+                </span>
+                <div className="text-2xl font-black text-rose-400">
+                  {formatCurrency(udharCustomerDebt)}
+                </div>
+                {udharCreditLimit > 0 && (
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    Credit Limit: {formatCurrency(udharCreditLimit)}
+                  </div>
+                )}
+              </div>
+              <div className="text-right text-xs text-slate-400 font-mono">
+                {currentUdharCust?.phone || 'No phone'}
+              </div>
+            </div>
+          )}
+
+          {/* Credit Limit Alert Banner */}
+          {isLimitExceeded && (
+            <div className="p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold">Credit Limit Warning:</span> Customer limit of{' '}
+                {formatCurrency(udharCreditLimit)} will be exceeded by{' '}
+                {formatCurrency(totalAfterUdhar - udharCreditLimit)}!
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Udhar Credit Amount (Rs.) *
+            </label>
+            <input
+              type="number"
+              min="1"
+              required
+              autoFocus
+              value={udharAmount}
+              onChange={(e) => setUdharAmount(e.target.value)}
+              placeholder="Enter credit amount given"
+              className="w-full px-3 py-2.5 text-lg font-bold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-rose-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
+            />
+          </div>
+
+          {/* Quick Banknotes */}
+          <div>
+            <span className="block text-[11px] font-semibold text-slate-500 mb-1.5">
+              Quick Pakistani Amounts:
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {[500, 1000, 2000, 3000, 5000, 10000].map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setUdharAmount(b.toString())}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300"
+                >
+                  Rs. {b.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Bill / Invoice No. (Optional)
+              </label>
+              <input
+                type="text"
+                value={udharOrderNumber}
+                onChange={(e) => setUdharOrderNumber(e.target.value)}
+                placeholder="e.g. INV-1049"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                New Expected Baqaya
+              </label>
+              <div className="px-3 py-2 text-xs font-extrabold bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 rounded-xl text-rose-700 dark:text-rose-300">
+                {formatCurrency(totalAfterUdhar)}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Items Description / Purpose
+            </label>
+            <input
+              type="text"
+              value={udharNotes}
+              onChange={(e) => setUdharNotes(e.target.value)}
+              placeholder="e.g. 2 Unstitched Suits, Cooking Oil & Ghee"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
+            />
+          </div>
+
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-2">
+            <button
+              type="button"
+              onClick={() => setUdharCustomer(null)}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={udharSubmitting || parsedUdharAmount <= 0 || !udharCustomer?._id}
+              className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/20 transition disabled:opacity-50"
+            >
+              {udharSubmitting ? 'Recording...' : 'Confirm Udhar (ادھار دیا)'}
             </button>
           </div>
         </form>
@@ -771,7 +1159,7 @@ const KhataPage = () => {
         isOpen={!!statementCustomer}
         onClose={() => setStatementCustomer(null)}
         title={`Passbook Ledger - ${statementCustomer?.name}`}
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-3xl"
       >
         <div className="space-y-4">
           <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between gap-3">
@@ -797,7 +1185,7 @@ const KhataPage = () => {
             </div>
           </div>
 
-          {/* Transactions List */}
+          {/* Transactions List with 1-Tap Receipt Generation */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden max-h-80 overflow-y-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-500 sticky top-0">
@@ -808,12 +1196,13 @@ const KhataPage = () => {
                   <th className="py-2.5 px-3 text-right">Debit (Udhar)</th>
                   <th className="py-2.5 px-3 text-right">Credit (Wasooli)</th>
                   <th className="py-2.5 px-3 text-right">Balance</th>
+                  <th className="py-2.5 px-3 text-right">Slip (پرچی)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {!Array.isArray(statementCustomer?.transactions) || statementCustomer.transactions.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="py-8 text-center text-slate-400">
+                    <td colSpan="7" className="py-8 text-center text-slate-400">
                       No ledger transactions recorded yet.
                     </td>
                   </tr>
@@ -854,6 +1243,17 @@ const KhataPage = () => {
                       </td>
                       <td className="py-2 px-3 text-right font-black text-slate-900 dark:text-white">
                         {formatCurrency(tx.balanceAfter)}
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTxReceipt(tx)}
+                          className="px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/60 dark:hover:bg-brand-900/60 text-brand-700 dark:text-brand-300 transition inline-flex items-center gap-1 font-bold text-[11px]"
+                          title="Generate & View Digital Receipt"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                          <span>پرچی</span>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -905,6 +1305,16 @@ const KhataPage = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Digital Khata Thermal & WhatsApp Receipt Modal */}
+      <KhataReceiptModal
+        isOpen={isReceiptOpen}
+        onClose={() => {
+          setIsReceiptOpen(false);
+          setActiveReceipt(null);
+        }}
+        receipt={activeReceipt}
+      />
     </div>
   );
 };

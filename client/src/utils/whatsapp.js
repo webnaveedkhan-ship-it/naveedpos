@@ -118,6 +118,66 @@ export const buildWhatsAppReminderText = (customer, storeName = 'NaveedPOS Store
 };
 
 /**
+ * Formats a Khata Payment (Wasooli) or Udhar (Credit Given) into a professional WhatsApp receipt slip.
+ */
+export const buildWhatsAppKhataReceiptText = (receiptData, storeName = 'NaveedPOS Store') => {
+  const isPayment = receiptData.type === 'PAYMENT_RECEIVED' || receiptData.type === 'WASOOLI';
+  const typeBadge = isPayment ? 'WASOOLI RECEIPT (وصولی رسید)' : 'UDHAR PARCHI (ادھار پرچی)';
+  const dateStr = receiptData.date
+    ? new Date(receiptData.date).toLocaleString('en-PK', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : new Date().toLocaleString('en-PK');
+
+  const lines = [
+    `🧾 *${typeBadge}*`,
+    `🏪 *${storeName.toUpperCase()}*`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    receiptData.receiptNumber ? `Receipt #: *#${receiptData.receiptNumber}*` : null,
+    `Date & Time: ${dateStr}`,
+    `Customer: *${receiptData.customerName || 'Valued Customer'}*`,
+    receiptData.customerPhone ? `Phone: ${receiptData.customerPhone}` : null,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    isPayment
+      ? `💵 *Wasool Shuda (Amount Paid): Rs. ${Number(receiptData.amount || 0).toLocaleString()}*`
+      : `📦 *Naya Udhar (Credit Given): Rs. ${Number(receiptData.amount || 0).toLocaleString()}*`,
+    isPayment && receiptData.paymentMethod ? `Payment Mode: *${receiptData.paymentMethod.toUpperCase()}*` : null,
+    receiptData.notes ? `Details / Items: _${receiptData.notes}_` : null,
+    receiptData.previousDebt !== undefined
+      ? `Pichla Baqaya (Prev Due): Rs. ${Number(receiptData.previousDebt || 0).toLocaleString()}`
+      : null,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `*NAYA BAQAYA (Total Balance): Rs. ${Number(receiptData.balanceAfter ?? receiptData.currentDebt ?? 0).toLocaleString()}*`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    isPayment
+      ? `Shukriya! Aap ki wasooli darj ho chuki hai.`
+      : `Udhar ki digital pohnch. Baraye mehrbani waqt par adaigi farmayein.`,
+    `_Powered by NaveedPOS_`,
+  ].filter(Boolean);
+
+  return lines.join('\n');
+};
+
+/**
+ * Builds a direct wa.me link for sending a Khata Wasooli / Udhar receipt slip.
+ */
+export const getWhatsAppKhataReceiptUrl = (receiptData, storeName = 'NaveedPOS Store') => {
+  const targetPhone = receiptData.customerPhone || '';
+  const normalized = normalizeWhatsAppPhone(targetPhone);
+  const message = buildWhatsAppKhataReceiptText(receiptData, storeName);
+  const encoded = encodeURIComponent(message);
+
+  if (normalized) {
+    return `https://wa.me/${normalized}?text=${encoded}`;
+  }
+  return `https://wa.me/?text=${encoded}`;
+};
+
+/**
  * Builds a direct wa.me link for an Udhar reminder.
  */
 export const getWhatsAppReminderUrl = (customer, storeName) => {
