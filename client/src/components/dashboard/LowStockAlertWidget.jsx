@@ -21,9 +21,10 @@ const LowStockAlertWidget = ({
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const safeProducts = Array.isArray(products) ? products : [];
+  const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
 
   const handleOpenRestock = (product) => {
+    if (!product) return;
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -34,7 +35,7 @@ const LowStockAlertWidget = ({
   };
 
   const handleSuccess = (updatedProduct, quantityAdded) => {
-    if (onRestockSuccess) {
+    if (onRestockSuccess && updatedProduct) {
       onRestockSuccess(updatedProduct, quantityAdded);
     }
     handleCloseRestock();
@@ -134,12 +135,13 @@ const LowStockAlertWidget = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {safeProducts.map((item) => {
-                  const stock = Number(item.stockQuantity || 0);
+                  if (!item) return null;
+                  const stock = Number(item?.stockQuantity || 0);
                   const threshold = Number(
-                    item.lowStockAlert || item.lowStockThreshold || 5
+                    item?.lowStockAlert || item?.lowStockThreshold || 5
                   );
-                  const cost = Number(item.costPrice || 0);
-                  const price = Number(item.sellingPrice || item.price || 0);
+                  const cost = Number(item?.costPrice || 0);
+                  const price = Number(item?.sellingPrice || item?.price || 0);
                   const isOutOfStock = stock <= 0;
 
                   return (

@@ -186,23 +186,25 @@ const DashboardPage = () => {
   };
 
   const handleRestockSuccess = (updatedProduct, quantityAdded) => {
+    if (!updatedProduct) return;
     setData((prev) => {
       if (!prev) return prev;
-      const currentList = prev.lowStockProducts || [];
+      const currentList = Array.isArray(prev.lowStockProducts) ? prev.lowStockProducts : [];
       const threshold = Number(
-        updatedProduct.lowStockAlert || updatedProduct.lowStockThreshold || 5
+        updatedProduct?.lowStockAlert || updatedProduct?.lowStockThreshold || 5
       );
-      const newStock = Number(updatedProduct.stockQuantity || 0);
+      const newStock = Number(updatedProduct?.stockQuantity || 0);
 
       let nextList;
       if (newStock > threshold) {
         // Product is now safely above reorder threshold, remove from critical alert list
-        nextList = currentList.filter((p) => p._id !== updatedProduct._id);
+        nextList = currentList.filter((p) => p && p._id !== updatedProduct._id);
       } else {
         // Still low stock, but with updated quantity and wholesale cost
         nextList = currentList
-          .map((p) => (p._id === updatedProduct._id ? { ...p, ...updatedProduct } : p))
-          .sort((a, b) => Number(a.stockQuantity || 0) - Number(b.stockQuantity || 0));
+          .map((p) => (p && p._id === updatedProduct._id ? { ...p, ...updatedProduct } : p))
+          .filter(Boolean)
+          .sort((a, b) => Number(a?.stockQuantity || 0) - Number(b?.stockQuantity || 0));
       }
 
       return {
@@ -215,15 +217,17 @@ const DashboardPage = () => {
       };
     });
 
-    setRestockToast({
-      title: updatedProduct.title,
-      quantityAdded,
-      newStock: updatedProduct.stockQuantity,
-    });
+    if (updatedProduct?.title) {
+      setRestockToast({
+        title: updatedProduct.title,
+        quantityAdded: quantityAdded || 0,
+        newStock: updatedProduct.stockQuantity ?? 0,
+      });
 
-    setTimeout(() => {
-      setRestockToast(null);
-    }, 4500);
+      setTimeout(() => {
+        setRestockToast(null);
+      }, 4500);
+    }
   };
 
   const {
@@ -236,11 +240,11 @@ const DashboardPage = () => {
     periodLabel = 'Today',
   } = data || {};
 
-  const safeLowStockProducts = Array.isArray(lowStockProducts)
+  const safeLowStockProducts = (Array.isArray(lowStockProducts)
     ? lowStockProducts
     : Array.isArray(data?.products)
     ? data.products
-    : [];
+    : []).filter(Boolean);
 
   const safeRecentOrders = Array.isArray(recentOrders) && recentOrders.length > 0
     ? recentOrders

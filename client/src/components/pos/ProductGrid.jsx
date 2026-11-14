@@ -239,11 +239,11 @@ const ProductGrid = ({
             {filteredProducts.map((product) => {
               const cartItem = cartItems.find((i) => i.product === product._id);
               const inCartQty = cartItem ? cartItem.quantity : 0;
-              const isOutOfStock = Number(product.stockQuantity || 0) <= 0;
+              const isOutOfStock = Number(product?.stockQuantity || 0) <= 0;
               const isLowStock =
                 !isOutOfStock &&
-                Number(product.stockQuantity) <=
-                  Number(product.lowStockAlert || product.lowStockThreshold || 5);
+                Number(product?.stockQuantity || 0) <=
+                  Number(product?.lowStockAlert || product?.lowStockThreshold || 5);
               const remainingStock = Number(product.stockQuantity) - inCartQty;
               const imgSrc = product.image || product.imageUrl || DEFAULT_FALLBACK_IMAGE;
               const isJustAdded = addedEffectId === product._id;

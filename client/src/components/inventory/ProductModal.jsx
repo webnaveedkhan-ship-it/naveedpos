@@ -45,7 +45,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
         price: product.price?.toString() || '',
         costPrice: product.costPrice?.toString() || '',
         stockQuantity: product.stockQuantity?.toString() || '',
-        lowStockAlert: product.lowStockAlert?.toString() || '5',
+        lowStockAlert: (product.lowStockAlert ?? product.lowStockThreshold ?? '5').toString(),
         unitType: product.unitType || 'piece',
         allowFractional: Boolean(product.allowFractional),
         cartonSize: product.cartonSize?.toString() || '1',
@@ -60,7 +60,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
       setFormData({
         title: '',
         sku: '',
-        category: categories.length > 0 && categories[0] !== 'All' ? categories[0] : 'General',
+        category: Array.isArray(categories) && categories.length > 0 && categories[0] !== 'All' ? categories[0] : 'General',
         price: '',
         costPrice: '',
         stockQuantity: '10',
@@ -289,7 +289,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product, categories = [] }) => 
               type="number"
               min="0"
               name="lowStockAlert"
-              value={formData.lowStockAlert}
+              value={formData?.lowStockAlert ?? '5'}
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
             />

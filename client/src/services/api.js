@@ -796,37 +796,52 @@ export const productService = {
 
   createProduct: async (formData) => {
     try {
+      const isFormData = typeof FormData !== 'undefined' && formData instanceof FormData;
       return await api.post('/products', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: isFormData
+          ? { 'Content-Type': 'multipart/form-data' }
+          : { 'Content-Type': 'application/json' },
       });
     } catch {
       // Handle FormData or JSON payload
-      const title = formData instanceof FormData ? formData.get('title') : formData.title;
-      const sku = formData instanceof FormData ? formData.get('sku') : formData.sku;
-      const price = formData instanceof FormData ? formData.get('price') : formData.price;
-      const category = formData instanceof FormData ? formData.get('category') : formData.category;
-      const stockQuantity = formData instanceof FormData ? formData.get('stockQuantity') : formData.stockQuantity;
+      const isFormData = typeof FormData !== 'undefined' && formData instanceof FormData;
+      const title = isFormData ? formData.get('title') : formData?.title;
+      const sku = isFormData ? formData.get('sku') : formData?.sku;
+      const price = isFormData ? formData.get('price') : formData?.price;
+      const costPrice = isFormData ? formData.get('costPrice') : formData?.costPrice;
+      const category = isFormData ? formData.get('category') : formData?.category;
+      const stockQuantity = isFormData ? formData.get('stockQuantity') : formData?.stockQuantity;
+      const lowStockAlert = isFormData ? formData.get('lowStockAlert') : (formData?.lowStockAlert ?? 5);
 
       const newProduct = {
         _id: `prod_${Date.now()}`,
         title: title || 'New Store Product',
-        sku: sku || `SKU-${Date.now().toString().slice(-4)}`,
+        sku: (sku || `SKU-${Date.now().toString().slice(-4)}`).toUpperCase(),
         price: Number(price || 100),
-        costPrice: Number(price ? price * 0.7 : 70),
+        sellingPrice: Number(price || 100),
+        costPrice: Number(costPrice || (price ? price * 0.7 : 70)),
         category: category || 'Beverages',
         stockQuantity: Number(stockQuantity || 10),
-        lowStockAlert: 5,
+        lowStockAlert: Number(lowStockAlert || 5),
+        lowStockThreshold: Number(lowStockAlert || 5),
         barcode: `8964000${Date.now().toString().slice(-4)}`,
+        status: 'active',
+        createdAt: new Date().toISOString(),
       };
-      localState.products.unshift(newProduct);
+      if (Array.isArray(localState.products)) {
+        localState.products.unshift(newProduct);
+      }
       return { data: { success: true, product: newProduct } };
     }
   },
 
   updateProduct: async (id, formData) => {
     try {
+      const isFormData = typeof FormData !== 'undefined' && formData instanceof FormData;
       return await api.put(`/products/${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: isFormData
+          ? { 'Content-Type': 'multipart/form-data' }
+          : { 'Content-Type': 'application/json' },
       });
     } catch {
       const p = localState.products.find((item) => item._id === id);

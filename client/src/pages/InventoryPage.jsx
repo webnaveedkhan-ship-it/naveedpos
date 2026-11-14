@@ -45,7 +45,7 @@ const InventoryPage = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const safeProducts = Array.isArray(products) ? products : [];
+  const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
 
   const handleSeedDummyProducts = async () => {
     try {
@@ -294,8 +294,11 @@ const InventoryPage = () => {
             </div>
           ) : (
             safeProducts.map((item) => {
-              const profit = item.price - (item.costPrice || 0);
-              const marginPct = item.price > 0 ? ((profit / item.price) * 100).toFixed(0) : 0;
+              if (!item) return null;
+              const price = Number(item.price || 0);
+              const costPrice = Number(item.costPrice || 0);
+              const profit = price - costPrice;
+              const marginPct = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
               return (
                 <div key={item._id} className="p-3.5 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
                   <div className="flex items-start justify-between gap-2">
@@ -314,7 +317,7 @@ const InventoryPage = () => {
                     </div>
                     <div className="text-right flex-shrink-0">
                       <div className="text-sm font-extrabold text-slate-900 dark:text-white">
-                        {formatCurrency(item.price)}
+                        {formatCurrency(price)}
                       </div>
                       {isAdmin && (
                         <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -420,8 +423,11 @@ const InventoryPage = () => {
                 </tr>
               ) : (
                 safeProducts.map((item) => {
-                  const profit = item.price - (item.costPrice || 0);
-                  const marginPct = item.price > 0 ? ((profit / item.price) * 100).toFixed(0) : 0;
+                  if (!item) return null;
+                  const price = Number(item.price || 0);
+                  const costPrice = Number(item.costPrice || 0);
+                  const profit = price - costPrice;
+                  const marginPct = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
 
                   return (
                     <tr
@@ -456,13 +462,13 @@ const InventoryPage = () => {
 
                       {/* Price */}
                       <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">
-                        {formatCurrency(item.price)}
+                        {formatCurrency(price)}
                       </td>
 
                       {/* Cost Price (Admin) */}
                       {isAdmin && (
                         <td className="py-3 px-4 text-slate-500 font-mono">
-                          {formatCurrency(item.costPrice || 0)}
+                          {formatCurrency(costPrice)}
                         </td>
                       )}
 

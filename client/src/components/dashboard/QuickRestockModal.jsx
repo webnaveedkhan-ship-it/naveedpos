@@ -24,12 +24,12 @@ const QuickRestockModal = ({ isOpen, onClose, product, onRestockSuccess }) => {
 
   if (!product) return null;
 
-  const currentStock = Number(product.stockQuantity || 0);
-  const threshold = Number(product.lowStockAlert || product.lowStockThreshold || 5);
-  const sellingPrice = Number(product.sellingPrice || product.price || 0);
+  const currentStock = Number(product?.stockQuantity || 0);
+  const threshold = Number(product?.lowStockAlert || product?.lowStockThreshold || 5);
+  const sellingPrice = Number(product?.sellingPrice || product?.price || 0);
   const parsedQty = parseInt(quantityToAdd, 10) || 0;
   const projectedStock = currentStock + parsedQty;
-  const parsedCost = newCostPrice !== '' ? Number(newCostPrice) : Number(product.costPrice || 0);
+  const parsedCost = newCostPrice !== '' ? Number(newCostPrice) : Number(product?.costPrice || 0);
   const projectedMargin =
     sellingPrice > 0 && parsedCost >= 0
       ? Math.round(((sellingPrice - parsedCost) / sellingPrice) * 1000) / 10
@@ -54,14 +54,18 @@ const QuickRestockModal = ({ isOpen, onClose, product, onRestockSuccess }) => {
         payload.newCostPrice = Number(newCostPrice);
       }
 
-      const res = await productService.quickRestock(product._id, payload);
-      if (res.data.success) {
+      const res = await productService.quickRestock(product?._id, payload);
+      if (res?.data?.success) {
+        const returnedProduct = res.data.product || {
+          ...product,
+          stockQuantity: currentStock + parsedQty,
+        };
         if (onRestockSuccess) {
-          onRestockSuccess(res.data.product, parsedQty);
+          onRestockSuccess(returnedProduct, parsedQty);
         }
         onClose();
       } else {
-        setError(res.data.message || 'Failed to restock inventory.');
+        setError(res?.data?.message || 'Failed to restock inventory.');
       }
     } catch (err) {
       console.error('Quick restock error:', err);

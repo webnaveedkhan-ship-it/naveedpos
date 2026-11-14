@@ -21,8 +21,14 @@ const getProducts = async (req, res, next) => {
     const tenantId = req.user.tenantId;
 
     if (global.useMemoryStore) {
+      const matchTenant = (p) => {
+        if (!p) return false;
+        if (!tenantId) return true;
+        return (p.tenantId || '').toString() === tenantId.toString();
+      };
+
       let filtered = memoryStore.products.filter(
-        (p) => p.status === 'active' && (!tenantId || p.tenantId === tenantId)
+        (p) => p && p.status === 'active' && matchTenant(p)
       );
 
       // Auto-populate dummy products if store has no inventory yet
@@ -30,14 +36,14 @@ const getProducts = async (req, res, next) => {
         const dummy = getDummyProducts(tenantId);
         dummy.forEach((p) => memoryStore.products.push(p));
         filtered = memoryStore.products.filter(
-          (p) => p.status === 'active' && (!tenantId || p.tenantId === tenantId)
+          (p) => p && p.status === 'active' && matchTenant(p)
         );
       }
 
       if (search && search.trim() !== '') {
         const q = search.trim().toLowerCase();
         filtered = filtered.filter(
-          (p) => p.title.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+          (p) => (p.title || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
         );
       }
 
@@ -46,7 +52,9 @@ const getProducts = async (req, res, next) => {
       }
 
       if (lowStock === 'true') {
-        filtered = filtered.filter((p) => p.stockQuantity <= p.lowStockAlert);
+        filtered = filtered.filter(
+          (p) => Number(p.stockQuantity || 0) <= Number(p.lowStockAlert || p.lowStockThreshold || 5)
+        );
       }
 
       if (all === 'true') {
@@ -257,7 +265,7 @@ const createProduct = async (req, res, next) => {
 
     if (global.useMemoryStore) {
       const exists = memoryStore.products.find(
-        (p) => p.sku === sku.toUpperCase() && p.tenantId === tenantId
+        (p) => p && p.sku === (sku || '').toUpperCase() && (p.tenantId || '').toString() === (tenantId || '').toString()
       );
       if (exists) {
         return res.status(400).json({
@@ -328,10 +336,6 @@ const createProduct = async (req, res, next) => {
       image: imagePath,
       description: description || '',
       variants: variants || [],
-    });
-      cartonPrice: Number(cartonPrice) || 0,
-      image: imagePath,
-      description: description || '',
     });
 
     res.status(201).json({ success: true, message: 'Product created successfully', product });
@@ -467,16 +471,18 @@ const getLowStockProducts = async (req, res, next) => {
       const items = memoryStore.products
         .filter(
           (p) =>
+            p &&
             p.status === 'active' &&
-            (!tenantId || p.tenantId === tenantId) &&
-            p.stockQuantity <= (p.lowStockAlert || p.lowStockThreshold || 5)
+            (!tenantId || (p.tenantId || '').toString() === tenantId.toString()) &&
+            Number(p.stockQuantity || 0) <= Number(p.lowStockAlert || p.lowStockThreshold || 5)
         )
-        .sort((a, b) => a.stockQuantity - b.stockQuantity);
+        .sort((a, b) => Number(a.stockQuantity || 0) - Number(b.stockQuantity || 0));
 
       return res.status(200).json({
         success: true,
         count: items.length,
         items,
+        products: items,
       });
     }
 
@@ -574,15 +580,16 @@ const seedDummyProducts = async (req, res, next) => {
     }
 
     if (global.useMemoryStore) {
+      const matchTenant = (p) => p && (p.tenantId || '').toString() === tenantId.toString();
       const existing = memoryStore.products.filter(
-        (p) => p.status === 'active' && p.tenantId === tenantId
+        (p) => p.status === 'active' && matchTenant(p)
       );
       if (existing.length === 0) {
         const dummy = getDummyProducts(tenantId);
         dummy.forEach((p) => memoryStore.products.push(p));
       }
       const updated = memoryStore.products.filter(
-        (p) => p.status === 'active' && p.tenantId === tenantId
+        (p) => p.status === 'active' && matchTenant(p)
       );
       return res.status(200).json({
         success: true,
