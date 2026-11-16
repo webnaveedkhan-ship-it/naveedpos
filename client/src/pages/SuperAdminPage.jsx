@@ -28,15 +28,16 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
-const SuperAdminPage = () => {
+const SuperAdminPage = ({ forcedTab }) => {
   const { tab } = useParams();
   const navigate = useNavigate();
   const { impersonateStore } = useAuth();
 
   // Tab mapping
   const validTabs = ['telemetry', 'stores', 'tenants', 'payments', 'plans', 'settings', 'broadcast', 'audit'];
-  const normalizedTab = tab === 'stores' ? 'tenants' : tab;
-  const activeTab = validTabs.includes(tab) ? normalizedTab : 'telemetry';
+  const effectiveTab = forcedTab || tab;
+  const normalizedTab = effectiveTab === 'stores' ? 'tenants' : effectiveTab;
+  const activeTab = validTabs.includes(effectiveTab) ? normalizedTab : 'telemetry';
 
   const handleTabChange = (newTab) => {
     if (newTab === 'telemetry') {

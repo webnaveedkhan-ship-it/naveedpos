@@ -2,23 +2,34 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import SuperAdminLayout from './layouts/SuperAdminLayout';
-import StoreLayout from './layouts/StoreLayout';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import PosPage from './pages/PosPage';
-import InventoryPage from './pages/InventoryPage';
-import OrdersPage from './pages/OrdersPage';
-import DashboardPage from './pages/DashboardPage';
-import KhataPage from './pages/KhataPage';
-import SuperAdminPage from './pages/SuperAdminPage';
-import BillingPage from './pages/BillingPage';
-import ReportsPage from './pages/ReportsPage';
-import ExpensesPage from './pages/ExpensesPage';
-import SuppliersPage from './pages/SuppliersPage';
 import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
-import StaffPage from './pages/StaffPage';
+import SuppliersPage from './pages/SuppliersPage';
+import ReportsPage from './pages/ReportsPage';
 import ErrorBoundary from './components/common/ErrorBoundary';
+
+// Super Admin Platform Console Modules
+import {
+  SuperAdminLayout,
+  PlatformOverview,
+  StoresDirectory,
+  SubscriptionApprovals,
+  PlansPage,
+  PlatformSettingsPage,
+} from './pages/superadmin';
+
+// Retail Store Admin Modules
+import {
+  StoreLayout,
+  StoreDashboard,
+  PosTerminal,
+  ProductsInventory,
+  CustomerKhata,
+  SalesAndExpenses,
+  StaffManagement,
+  StoreSubscription,
+} from './pages/store';
 
 // ----------------------------------------------------------------------
 // 1. ROLE-BASED ROUTE GUARD WITH STRICT ARCHITECTURAL ISOLATION
@@ -162,15 +173,13 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<SuperAdminPage />} />
-              <Route path="stores" element={<SuperAdminPage />} />
-              <Route path="tenants" element={<SuperAdminPage />} />
-              <Route path="payments" element={<SuperAdminPage />} />
-              <Route path="plans" element={<SuperAdminPage />} />
-              <Route path="settings" element={<SuperAdminPage />} />
-              <Route path="broadcast" element={<SuperAdminPage />} />
-              <Route path="audit" element={<SuperAdminPage />} />
-              <Route path=":tab" element={<SuperAdminPage />} />
+              <Route index element={<PlatformOverview />} />
+              <Route path="stores" element={<StoresDirectory />} />
+              <Route path="tenants" element={<Navigate to="/super-admin/stores" replace />} />
+              <Route path="payments" element={<SubscriptionApprovals />} />
+              <Route path="plans" element={<PlansPage />} />
+              <Route path="settings" element={<PlatformSettingsPage />} />
+              <Route path="*" element={<Navigate to="/super-admin" replace />} />
             </Route>
 
             {/* ========================================================== */}
@@ -184,17 +193,17 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/pos" element={<PosPage />} />
-              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/dashboard" element={<StoreDashboard />} />
+              <Route path="/pos" element={<PosTerminal />} />
+              <Route path="/inventory" element={<ProductsInventory />} />
               <Route path="/products" element={<Navigate to="/inventory" replace />} />
               <Route path="/products/barcode-generator" element={<BarcodeGeneratorPage />} />
               <Route path="/barcode-generator" element={<Navigate to="/products/barcode-generator" replace />} />
-              <Route path="/khata" element={<KhataPage />} />
-              <Route path="/sales" element={<OrdersPage />} />
+              <Route path="/khata" element={<CustomerKhata />} />
+              <Route path="/sales" element={<SalesAndExpenses />} />
               <Route path="/orders" element={<Navigate to="/sales" replace />} />
-              <Route path="/cashbook" element={<ExpensesPage />} />
-              <Route path="/expenses" element={<Navigate to="/cashbook" replace />} />
+              <Route path="/cashbook" element={<Navigate to="/sales?tab=expenses" replace />} />
+              <Route path="/expenses" element={<Navigate to="/sales?tab=expenses" replace />} />
               <Route path="/suppliers" element={<SuppliersPage />} />
               <Route path="/reports" element={<ReportsPage />} />
 
@@ -203,7 +212,7 @@ function App() {
                 path="/staff"
                 element={
                   <ProtectedRoute allowedRoles={['STORE_OWNER']}>
-                    <StaffPage />
+                    <StaffManagement />
                   </ProtectedRoute>
                 }
               />
@@ -212,7 +221,7 @@ function App() {
                 path="/billing"
                 element={
                   <ProtectedRoute allowedRoles={['STORE_OWNER']}>
-                    <BillingPage />
+                    <StoreSubscription />
                   </ProtectedRoute>
                 }
               />
