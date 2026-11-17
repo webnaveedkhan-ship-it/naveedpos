@@ -114,6 +114,74 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [selectedBusinessModule, setSelectedBusinessModule] = useState('GENERAL_STORE');
+
+  const businessModuleDetails = {
+    FOOTWEAR: {
+      id: 'FOOTWEAR',
+      label: 'Footwear & Shoes',
+      urdu: 'جوتے اور چپل اسٹور',
+      icon: '👟',
+      tagline: 'Footwear Mart POS • Pakistani Sizes 6-11 Run',
+      urduTagline: 'سائز وائز اسٹاک، بروکن سائز رن الرٹس اور برانڈ اینالیٹکس',
+      features: [
+        { title: 'Sizes 6 to 11 Run', desc: 'Pre-configured Pakistani shoe size matrix.' },
+        { title: 'Broken Size Alert', desc: 'Detects orphan sizes to prevent dead stock.' },
+        { title: 'Shoe Box Barcodes', desc: 'Thermal sticker generator for shoe boxes.' },
+        { title: 'Pair Margin Tracker', desc: 'Calculates exact profit per pair sold.' },
+      ],
+    },
+    GARMENTS: {
+      id: 'GARMENTS',
+      label: 'Garments & Boutique',
+      urdu: 'کپڑے اور ملبوسات',
+      icon: '👕',
+      tagline: 'Boutique & Apparel POS • Sizes S to XXL',
+      urduTagline: 'کلیکشن وائز سیلز، سائز بریک ڈاؤن اور ٹیلرنگ آلٹریشن ٹریکر',
+      features: [
+        { title: 'Sizes S, M, L, XL', desc: 'Ready-to-wear sizing & color variations.' },
+        { title: 'Clothing Hang-Tags', desc: 'Print boutique tags with wash care & SKU.' },
+        { title: 'Tailoring & Alteration', desc: 'Track customer fits & pickup dates.' },
+        { title: 'Seasonal Collection', desc: 'Summer Lawn, Shawls & Kurta margins.' },
+      ],
+    },
+    GENERAL_STORE: {
+      id: 'GENERAL_STORE',
+      label: 'Supermart & Kiryana',
+      urdu: 'کریانہ اور جنرل اسٹور',
+      icon: '🛒',
+      tagline: 'Fast Barcode POS • Loose Scales & FMCG Expiry',
+      urduTagline: 'بارکوڈ اسکیننگ، وزنی اشیاء (کلو/گرام) اور ایکسپائری واچ ڈاگ',
+      features: [
+        { title: 'Rapid Barcode Scanning', desc: 'Sub-second thermal receipt checkout.' },
+        { title: 'Loose Weight Scales', desc: 'Sell Sugar, Flour, and Daal in KG/Grams.' },
+        { title: 'Expiry Date Watchdog', desc: 'Alerts for FMCG items expiring in 30 days.' },
+        { title: 'Wholesale Cartons', desc: 'Split carton packs into individual shelf units.' },
+      ],
+    },
+    PERFUME: {
+      id: 'PERFUME',
+      label: 'Perfumery & Attar',
+      urdu: 'عطر اور پرفیوم',
+      icon: '🧪',
+      tagline: 'Fragrance House POS • ML & Tola Formulations',
+      urduTagline: 'ملی لیٹر اور تولہ پیمائش، کسٹم خوشبو بلینڈنگ اور ٹیسٹر ٹریکنگ',
+      features: [
+        { title: 'ML & Tola Dispensing', desc: 'Precision volume tracking for pure oils.' },
+        { title: 'Tester Bottle Depletion', desc: 'Measure tester sprays against checkout sales.' },
+        { title: 'Fragrance Note Families', desc: 'Dehn Al Oud, French Musk, Amber & Citrus.' },
+        { title: 'Custom Blend Formulas', desc: 'Record oil-to-alcohol blend recipes.' },
+      ],
+    },
+  };
+
+  const handleLaunchModuleDemo = async (modType) => {
+    try {
+      localStorage.setItem('naveedpos_business_type', modType);
+      setSelectedBusinessModule(modType);
+      await handleLoginSubmit(null, 'store@naveedpos.com', 'admin123');
+    } catch {}
+  };
 
   // Dynamic Owner Detection:
   // Option 1 (Super Admin) is ONLY revealed to the owner (naveed@naveedpos.com),
@@ -286,6 +354,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
       phone: cleanPhone || '',
       city: 'Islamabad',
       password,
+      businessType: selectedBusinessModule,
     };
 
     try {
@@ -446,76 +515,79 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                 </div>
               </>
             ) : (
-              /* Retail Store Highlights (Public View) */
+              /* Retail Store Highlights (Public View with Business Module Switcher) */
               <>
-                <div className="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 px-3 py-1 rounded-full text-xs font-bold w-fit">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
-                  <span>✨ 14-Day Free Trial — No Credit Card Needed</span>
+                {/* 4 Specialized Business Module Filter Pills */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Select Business Module to Preview:
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      {businessModuleDetails[selectedBusinessModule]?.label}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                    {Object.values(businessModuleDetails).map((mod) => {
+                      const isSel = selectedBusinessModule === mod.id;
+                      return (
+                        <button
+                          key={mod.id}
+                          type="button"
+                          onClick={() => setSelectedBusinessModule(mod.id)}
+                          className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 ${
+                            isSel
+                              ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <span>{mod.icon}</span>
+                          <span className="truncate">{mod.label.split(' ')[0]}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>
+                  <div className="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/25 px-3 py-1 rounded-full text-xs font-bold w-fit mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                    <span>{businessModuleDetails[selectedBusinessModule]?.tagline}</span>
+                  </div>
+
                   <h2 className="text-2xl xl:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                    Digital Billing &amp; Khata for{' '}
+                    Dedicated POS &amp; Khata for{' '}
                     <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                      Retailers &amp; Marts
+                      {businessModuleDetails[selectedBusinessModule]?.label}
                     </span>
                   </h2>
                   <p
                     dir="rtl"
-                    className="text-sm font-bold text-emerald-600 dark:text-emerald-300/90 mt-1.5 font-sans"
+                    className="text-sm font-bold text-emerald-600 dark:text-emerald-300/90 mt-1 font-sans"
                   >
-                    کاغذی حساب اور ادھار کے جھنجھٹ سے نجات — تیز ترین بلنگ اور خودکار ریکوری
+                    {businessModuleDetails[selectedBusinessModule]?.urduTagline}
                   </p>
                 </div>
 
+                {/* 4 Dynamic Module Features */}
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
-                  <div className="bg-white/80 dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <Zap className="w-3.5 h-3.5 text-amber-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        Fast Barcode Billing
-                      </span>
+                  {businessModuleDetails[selectedBusinessModule]?.features.map((feat, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white/80 dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center space-x-2 mb-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {feat.title}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+                        {feat.desc}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                      80mm thermal receipts with 0% tax &amp; loose weight sales.
-                    </p>
-                  </div>
-
-                  <div className="bg-white/80 dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        WhatsApp Receipts
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                      Direct WhatsApp bills &amp; automated recovery reminders.
-                    </p>
-                  </div>
-
-                  <div className="bg-white/80 dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <BookOpen className="w-3.5 h-3.5 text-cyan-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        Customer Udhar Ledger
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                      Stop losing credit balances in notebooks. 1-tap wasooli.
-                    </p>
-                  </div>
-
-                  <div className="bg-white/80 dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <TrendingUp className="w-3.5 h-3.5 text-indigo-500" />
-                      <span className="text-xs font-bold text-slate-900 dark:text-white">
-                        Sham Ka Hisaab
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-                      Daily net profit, drawer cash reconciliation &amp; turnover.
-                    </p>
-                  </div>
+                  ))}
                 </div>
               </>
             )}
@@ -814,16 +886,57 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     )}
                   </button>
 
-                  {/* Full-Width CTA 2: 1-Click Store Demo */}
-                  <button
-                    type="button"
-                    onClick={() => handleLoginSubmit(null, 'store@naveedpos.com', 'admin123')}
-                    disabled={isLoading}
-                    className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1.5 min-h-[40px] active:scale-[0.98]"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>⚡ 1-Click Store Demo</span>
-                  </button>
+                  {/* 1-Click Business Module Demo Dashboards */}
+                  <div className="pt-1 space-y-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block text-center">
+                      ⚡ 1-Click Live Test for Your Business:
+                    </span>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchModuleDemo('FOOTWEAR')}
+                        disabled={isLoading}
+                        className="py-1.5 px-2 bg-slate-100 hover:bg-amber-100 dark:bg-slate-800/80 dark:hover:bg-amber-950/40 text-slate-800 dark:text-slate-200 hover:text-amber-800 dark:hover:text-amber-300 font-bold text-[11px] rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1"
+                        title="Test Footwear & Shoe Mart Dashboard"
+                      >
+                        <span>👟</span>
+                        <span className="truncate">Demo Footwear</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchModuleDemo('GARMENTS')}
+                        disabled={isLoading}
+                        className="py-1.5 px-2 bg-slate-100 hover:bg-blue-100 dark:bg-slate-800/80 dark:hover:bg-blue-950/40 text-slate-800 dark:text-slate-200 hover:text-blue-800 dark:hover:text-blue-300 font-bold text-[11px] rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1"
+                        title="Test Garments & Boutique Dashboard"
+                      >
+                        <span>👕</span>
+                        <span className="truncate">Demo Garments</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchModuleDemo('GENERAL_STORE')}
+                        disabled={isLoading}
+                        className="py-1.5 px-2 bg-slate-100 hover:bg-emerald-100 dark:bg-slate-800/80 dark:hover:bg-emerald-950/40 text-slate-800 dark:text-slate-200 hover:text-emerald-800 dark:hover:text-emerald-300 font-bold text-[11px] rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1"
+                        title="Test Supermart & Grocery Dashboard"
+                      >
+                        <span>🛒</span>
+                        <span className="truncate">Demo Supermart</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchModuleDemo('PERFUME')}
+                        disabled={isLoading}
+                        className="py-1.5 px-2 bg-slate-100 hover:bg-purple-100 dark:bg-slate-800/80 dark:hover:bg-purple-950/40 text-slate-800 dark:text-slate-200 hover:text-purple-800 dark:hover:text-purple-300 font-bold text-[11px] rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center space-x-1"
+                        title="Test Perfumery & Attar Dashboard"
+                      >
+                        <span>🧪</span>
+                        <span className="truncate">Demo Perfumery</span>
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Switch to Free Trial */}
                   <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -843,6 +956,39 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                 /* PUBLIC START FREE TRIAL FORM                           */
                 /* ------------------------------------------------------- */
                 <form onSubmit={handleSignUpSubmit} className="space-y-2.5">
+                  {/* Business Module / Industry Selector */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        Select Store Industry (بزنس ماڈیول) <span className="text-rose-500">*</span>
+                      </label>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                        {businessModuleDetails[selectedBusinessModule]?.urdu}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {Object.values(businessModuleDetails).map((m) => {
+                        const isSel = selectedBusinessModule === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setSelectedBusinessModule(m.id)}
+                            className={`p-2 rounded-xl border text-xs font-bold transition flex items-center space-x-1.5 text-left active:scale-[0.98] ${
+                              isSel
+                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-emerald-500 shadow-sm ring-1 ring-emerald-500/50'
+                                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/80'
+                            }`}
+                          >
+                            <span className="text-base">{m.icon}</span>
+                            <span className="truncate">{m.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Grid 1: Store Name & Owner Name */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {/* Store Name Input */}

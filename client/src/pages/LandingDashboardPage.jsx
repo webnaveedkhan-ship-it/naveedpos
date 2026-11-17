@@ -33,6 +33,7 @@ const LandingDashboardPage = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated, isSuperAdmin, isImpersonating } = useAuth();
   const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const [activeDemoModule, setActiveDemoModule] = useState('FOOTWEAR');
 
   // If already logged in, quick redirect button
   const handleGoToApp = () => {
@@ -43,10 +44,12 @@ const LandingDashboardPage = () => {
     }
   };
 
-  // 1-Click Instant Demo Experience
-  const handleLaunchDemo = async () => {
+  // 1-Click Instant Demo Experience with specialized business module
+  const handleLaunchDemo = async (moduleType = null) => {
     try {
       setIsDemoLoading(true);
+      const modToUse = moduleType || activeDemoModule || 'GENERAL_STORE';
+      localStorage.setItem('naveedpos_business_type', modToUse);
       await login('store@naveedpos.com', 'admin123');
       navigate('/dashboard');
     } catch {
@@ -236,6 +239,49 @@ const LandingDashboardPage = () => {
       {/* ------------------------------------------------------------- */}
       <section id="dashboard-preview" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1C2541]/70 shadow-2xl p-4 sm:p-8 backdrop-blur-xl space-y-6">
+          {/* Business Module Interactive Switcher Tabs on Landing Showcase */}
+          <div className="space-y-2 pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+              <span className="font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Explore Dedicated Dashboard for Your Business Type:
+              </span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                100% Specialized Layout, Metrics &amp; Workflows
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { id: 'FOOTWEAR', label: 'Footwear Mart', icon: '👟', urdu: 'جوتے اور چپل', badge: 'Sizes 6-11' },
+                { id: 'GARMENTS', label: 'Garments & Boutique', icon: '👕', urdu: 'کپڑے اور ملبوسات', badge: 'Sizes S-XXL' },
+                { id: 'GENERAL_STORE', label: 'Supermart & Kiryana', icon: '🛒', urdu: 'کریانہ اور جنرل اسٹور', badge: 'FMCG / Loose KG' },
+                { id: 'PERFUME', label: 'Perfumery & Attar', icon: '🧪', urdu: 'عطر اور پرفیوم', badge: 'ML & Tolas' },
+              ].map((m) => {
+                const isSel = activeDemoModule === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setActiveDemoModule(m.id)}
+                    className={`p-3 rounded-2xl border text-left transition-all active:scale-[0.98] ${
+                      isSel
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
+                        : 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">{m.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold block truncate">{m.label}</span>
+                        <span className="text-[10px] opacity-80 block truncate font-sans">{m.urdu}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Top Bar of the Mock Dashboard */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-3">
             <div className="flex items-center space-x-3">
@@ -243,98 +289,124 @@ const LandingDashboardPage = () => {
               <div className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
               <div className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
               <span className="text-xs font-mono font-bold text-slate-400 ml-2">
-                NaveedPOS Store Terminal • Al-Madina Superstore (Trial: 12 Days Left)
+                NaveedPOS • {activeDemoModule === 'FOOTWEAR' ? 'Footwear Mart (Peshawari & Leather Shoes)' : activeDemoModule === 'GARMENTS' ? 'Khaadi Boutique & Garments Mart' : activeDemoModule === 'PERFUME' ? 'Al-Haramain Attar & Fragrance House' : 'Al-Madina Superstore & Cash & Carry'} (Trial Active)
               </span>
             </div>
 
             <div className="flex items-center space-x-2">
               <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                🟢 Live POS Counter Online
+                🟢 Live Module Active
               </span>
               <button
-                onClick={handleLaunchDemo}
-                className="text-xs font-bold px-3 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition shadow-sm"
+                onClick={() => handleLaunchDemo(activeDemoModule)}
+                disabled={isDemoLoading}
+                className="text-xs font-bold px-3 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition shadow-sm flex items-center space-x-1"
               >
-                Open Terminal
+                <span>⚡ Test This Module Dashboard</span>
               </button>
             </div>
           </div>
 
-          {/* Quick Action Navigation Shortcuts inside Mock */}
-          <div className="flex flex-wrap items-center gap-2 p-2 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold">
-            <span className="text-slate-500 px-2">Quick Shortcuts:</span>
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white flex items-center gap-1">
-              <ShoppingCart className="w-3.5 h-3.5" /> [+ New Sale / POS (F2)]
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center gap-1">
-              <Package className="w-3.5 h-3.5 text-cyan-500" /> [+ Add Product]
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5 text-amber-500" /> [+ Add Khata Customer]
-            </span>
-            <span className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 flex items-center gap-1">
-              <Receipt className="w-3.5 h-3.5 text-purple-500" /> [📊 Sales History]
-            </span>
-          </div>
-
-          {/* 4 Primary KPI Stat Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 1. Gross Sales */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold">
-                <span>Today's Total Sales</span>
-                <TrendingUp className="w-4 h-4 text-emerald-500" />
+          {/* Module-Tailored 4 KPI Stat Cards */}
+          {activeDemoModule === 'FOOTWEAR' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Pairs Sold Today (جوڑے)</span>
+                <div className="text-2xl font-black text-slate-900 dark:text-white">129 Pairs</div>
+                <div className="text-[11px] font-bold text-emerald-600">Rs. 367,650 Gross</div>
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                Rs. 148,250
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Core Hot Size (سب سے تیز)</span>
+                <div className="text-2xl font-black text-amber-600">Size 8 &amp; 9</div>
+                <div className="text-[11px] text-slate-500">67% of customer demand</div>
               </div>
-              <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                +18.4% vs Yesterday
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Broken Size Runs (نامکمل)</span>
+                <div className="text-2xl font-black text-rose-600">3 Models</div>
+                <div className="text-[11px] text-rose-500">Restock core sizes needed</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Pairs in Shelf Stock</span>
+                <div className="text-2xl font-black text-indigo-600">480 Pairs</div>
+                <div className="text-[11px] text-indigo-600 font-bold">Estimated Cost: Rs. 840,000</div>
               </div>
             </div>
+          )}
 
-            {/* 2. Cash Wasooli / Collected */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold">
-                <span>Cash &amp; Wasooli</span>
-                <DollarSign className="w-4 h-4 text-blue-500" />
+          {activeDemoModule === 'GARMENTS' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Apparel Pieces Sold</span>
+                <div className="text-2xl font-black text-slate-900 dark:text-white">178 Pieces</div>
+                <div className="text-[11px] font-bold text-emerald-600">Avg Rs. 4,100 per suit</div>
               </div>
-              <div className="text-xl sm:text-2xl font-black text-blue-600 dark:text-blue-400">
-                Rs. 112,600
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Dominant Sizes</span>
+                <div className="text-2xl font-black text-emerald-600">Medium &amp; Large</div>
+                <div className="text-[11px] text-slate-500">62% of fashion demand</div>
               </div>
-              <div className="text-[11px] font-medium text-slate-500">
-                In physical drawer today
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Pending Alterations (ٹیلرنگ)</span>
+                <div className="text-2xl font-black text-amber-600">5 Fits</div>
+                <div className="text-[11px] text-amber-600 font-bold">2 ready for customer pickup</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Summer Lawn Collection</span>
+                <div className="text-2xl font-black text-purple-600">Rs. 729,000</div>
+                <div className="text-[11px] text-purple-600 font-bold">33% gross profit margin</div>
               </div>
             </div>
+          )}
 
-            {/* 3. Udhar Given */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold">
-                <span>Khata Udhar Given</span>
-                <BookOpen className="w-4 h-4 text-amber-500" />
+          {activeDemoModule === 'GENERAL_STORE' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Checkout Invoices (بلز)</span>
+                <div className="text-2xl font-black text-slate-900 dark:text-white">348 Bills</div>
+                <div className="text-[11px] font-bold text-emerald-600">Peak: 6:00 PM – 9:00 PM</div>
               </div>
-              <div className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400">
-                Rs. 35,650
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Loose Weight Sales (کلو)</span>
+                <div className="text-2xl font-black text-cyan-600">420 KG Sold</div>
+                <div className="text-[11px] text-slate-500">Sugar, Atta &amp; Daal</div>
               </div>
-              <div className="text-[11px] font-medium text-slate-500">
-                Automatic WhatsApp bills sent
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Expiry Alert (&lt;30 days)</span>
+                <div className="text-2xl font-black text-rose-600">3 Items</div>
+                <div className="text-[11px] text-rose-500">Dairy &amp; Bread alerts</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Wholesale Cartons</span>
+                <div className="text-2xl font-black text-indigo-600">64 Cartons</div>
+                <div className="text-[11px] text-indigo-600 font-bold">Unboxed for retail shelves</div>
               </div>
             </div>
+          )}
 
-            {/* 4. Net Profit */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 space-y-1">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-bold">
-                <span>Today's Net Profit</span>
-                <Sparkles className="w-4 h-4 text-emerald-500" />
+          {activeDemoModule === 'PERFUME' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Volume Dispensed (ملی لیٹر)</span>
+                <div className="text-2xl font-black text-purple-600">1,260 ML</div>
+                <div className="text-[11px] font-bold text-purple-600">Equivalent to 44 Tolas</div>
               </div>
-              <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                Rs. 38,400
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Top Fragrance Note</span>
+                <div className="text-2xl font-black text-amber-600">Dehn Al Oud</div>
+                <div className="text-[11px] text-slate-500">36% of daily fragrance sales</div>
               </div>
-              <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                25.9% Margin (Cogs deducted)
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Tester Conversion Ratio</span>
+                <div className="text-2xl font-black text-emerald-600">35.6%</div>
+                <div className="text-[11px] text-slate-500">1 in 3 tester sprays converts</div>
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 space-y-1">
+                <span className="text-xs text-slate-500 font-bold block">Custom Blends Mixed</span>
+                <div className="text-2xl font-black text-pink-600">18 Blends</div>
+                <div className="text-[11px] text-pink-600 font-bold">Pure oil formulas bottled</div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Lower Two Columns: Recent Orders & Khata Balance */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">

@@ -43,6 +43,12 @@ const tenantSchema = new mongoose.Schema(
       enum: ['trial', 'basic', 'standard', 'premium', 'monthly', 'yearly'],
       default: 'trial',
     },
+    businessType: {
+      type: String,
+      enum: ['FOOTWEAR', 'GARMENTS', 'GENERAL_STORE', 'PERFUME'],
+      default: 'GENERAL_STORE',
+      index: true,
+    },
     planLimits: {
       maxProducts: { type: Number, default: 1500 },
       maxKhataCustomers: { type: Number, default: 5000 },

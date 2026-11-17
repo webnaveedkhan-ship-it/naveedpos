@@ -13,6 +13,18 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [businessType, setBusinessTypeState] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.businessType) return u.businessType;
+      }
+      return localStorage.getItem('naveedpos_business_type') || 'GENERAL_STORE';
+    } catch {
+      return 'GENERAL_STORE';
+    }
+  });
   const [loading, setLoading] = useState(() => {
     try {
       const savedToken = localStorage.getItem('token');
@@ -177,6 +189,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const switchBusinessType = async (newType) => {
+    setBusinessTypeState(newType);
+    try {
+      localStorage.setItem('naveedpos_business_type', newType);
+      if (user) {
+        const updated = { ...user, businessType: newType };
+        setUser(updated);
+        localStorage.setItem('user', JSON.stringify(updated));
+      }
+      await authService.updateBusinessType(newType);
+    } catch (e) {
+      console.warn('Switch business type sync notice:', e);
+    }
+  };
+
   const userRole = (user?.role || '').toUpperCase();
   const userEmail = (user?.email || '').toLowerCase();
   // Role Guard: SUPER_ADMIN is exclusively the platform owner (naveed@naveedpos.com) or SUPER_ADMIN role.
@@ -220,6 +247,8 @@ export const AuthProvider = ({ children }) => {
         tenantName: user?.tenantName || (isSuperAdmin ? 'Super Admin SaaS Console' : 'Retail Store'),
         tenantId: user?.tenantId || null,
         tenantPlan,
+        businessType: user?.businessType || businessType || 'GENERAL_STORE',
+        switchBusinessType,
         planLimits,
         isImpersonating,
         login,

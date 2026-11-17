@@ -8,6 +8,11 @@ import StatCard from '../components/common/StatCard';
 import PeriodSelector from '../components/dashboard/PeriodSelector';
 import LowStockAlertWidget from '../components/dashboard/LowStockAlertWidget';
 import CashDrawerModal from '../components/pos/CashDrawerModal';
+import ModuleSwitcherHeader from '../components/dashboard/modules/ModuleSwitcherHeader';
+import FootwearDashboard from '../components/dashboard/modules/FootwearDashboard';
+import GarmentsDashboard from '../components/dashboard/modules/GarmentsDashboard';
+import SupermartDashboard from '../components/dashboard/modules/SupermartDashboard';
+import PerfumeDashboard from '../components/dashboard/modules/PerfumeDashboard';
 import {
   KpiCardsSkeleton,
   ChartSkeleton,
@@ -61,8 +66,18 @@ const itemVariants = {
 };
 
 const DashboardPage = () => {
-  const { user, tenantPlan } = useAuth();
+  const { user, tenantPlan, businessType, switchBusinessType } = useAuth();
   const navigate = useNavigate();
+
+  const [activeModule, setActiveModule] = useState(() => {
+    return businessType || user?.businessType || localStorage.getItem('naveedpos_business_type') || 'GENERAL_STORE';
+  });
+
+  useEffect(() => {
+    if (businessType && businessType !== activeModule) {
+      setActiveModule(businessType);
+    }
+  }, [businessType]);
 
   // Active reporting period state: 'today' | 'this_week' | 'this_month' | 'custom'
   const [activePeriod, setActivePeriod] = useState('today');
@@ -356,6 +371,65 @@ const DashboardPage = () => {
           </Link>
         </motion.div>
       )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* Interactive Business Module Selector Header                   */}
+      {/* ------------------------------------------------------------- */}
+      <motion.div variants={itemVariants}>
+        <ModuleSwitcherHeader
+          currentModule={activeModule}
+          onSelectModule={(newMod) => {
+            setActiveModule(newMod);
+            if (switchBusinessType) switchBusinessType(newMod);
+          }}
+        />
+      </motion.div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* Specialized Business Domain Dashboard (Footwear/Garments/etc) */}
+      {/* ------------------------------------------------------------- */}
+      <motion.div variants={itemVariants}>
+        {activeModule === 'FOOTWEAR' && (
+          <FootwearDashboard
+            statsData={statsData}
+            onAddProduct={() => {
+              navigate('/inventory?action=add');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-product')), 60);
+            }}
+            onOpenPos={() => navigate('/pos')}
+          />
+        )}
+        {activeModule === 'GARMENTS' && (
+          <GarmentsDashboard
+            statsData={statsData}
+            onAddProduct={() => {
+              navigate('/inventory?action=add');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-product')), 60);
+            }}
+            onOpenPos={() => navigate('/pos')}
+          />
+        )}
+        {activeModule === 'PERFUME' && (
+          <PerfumeDashboard
+            statsData={statsData}
+            onAddProduct={() => {
+              navigate('/inventory?action=add');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-product')), 60);
+            }}
+            onOpenPos={() => navigate('/pos')}
+          />
+        )}
+        {(activeModule === 'GENERAL_STORE' || activeModule === 'SUPERMART' || !activeModule) && (
+          <SupermartDashboard
+            statsData={statsData}
+            onAddProduct={() => {
+              navigate('/inventory?action=add');
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-product')), 60);
+            }}
+            onOpenPos={() => navigate('/pos')}
+          />
+        )}
+      </motion.div>
 
       {/* Header & Multi-Period Segmented Control */}
       <motion.div

@@ -80,6 +80,7 @@ const sendTokenResponse = async (user, statusCode, res, extra = {}) => {
         tenantId: user.tenantId || null,
         tenantName,
         tenantPlan: tenantData?.plan || 'trial',
+        businessType: tenantData?.businessType || 'GENERAL_STORE',
         planLimits: tenantData?.planLimits || (normalizedRole === 'SUPER_ADMIN' ? getPlanLimits('premium') : getPlanLimits('trial')),
         status: user.status || (user.isActive ? 'active' : 'inactive'),
         phone: user.phone || '',
@@ -335,6 +336,7 @@ const getMe = async (req, res, next) => {
     let tenantName = 'Super Admin Control';
     let tenantStatus = 'active';
     let tenantPlan = req.user.role === 'SUPER_ADMIN' ? 'premium' : 'trial';
+    let businessType = 'GENERAL_STORE';
     let planLimits = getPlanLimits(tenantPlan);
     let subscriptionExpiresAt = null;
 
@@ -345,6 +347,7 @@ const getMe = async (req, res, next) => {
           tenantName = t.name;
           tenantStatus = t.status;
           tenantPlan = t.plan || 'trial';
+          businessType = t.businessType || 'GENERAL_STORE';
           planLimits = t.planLimits || getPlanLimits(t.plan);
           subscriptionExpiresAt = t.subscriptionExpiresAt;
         }
@@ -354,6 +357,7 @@ const getMe = async (req, res, next) => {
           tenantName = t.name;
           tenantStatus = t.status;
           tenantPlan = t.plan || 'trial';
+          businessType = t.businessType || 'GENERAL_STORE';
           planLimits = t.planLimits || getPlanLimits(t.plan);
           subscriptionExpiresAt = t.subscriptionExpiresAt;
         }
@@ -383,6 +387,7 @@ const getMe = async (req, res, next) => {
         tenantName,
         tenantStatus,
         tenantPlan,
+        businessType,
         planLimits,
         subscriptionExpiresAt,
         daysRemaining,
@@ -401,7 +406,7 @@ const getMe = async (req, res, next) => {
 const registerStoreAndTrial = async (req, res, next) => {
   try {
     const shopName = req.body.shopName || req.body.storeName;
-    const { ownerName, email, phone, city = 'Islamabad', password } = req.body;
+    const { ownerName, email, phone, city = 'Islamabad', password, businessType = 'GENERAL_STORE' } = req.body;
 
     if (!shopName || !ownerName || !email || !password) {
       return res.status(400).json({
@@ -413,6 +418,10 @@ const registerStoreAndTrial = async (req, res, next) => {
     const cleanEmail = email.toLowerCase().trim();
     const cleanPhone = (phone || '').trim();
     const cleanShopName = shopName.trim();
+    const normalizedBusinessType = ['FOOTWEAR', 'GARMENTS', 'GENERAL_STORE', 'PERFUME'].includes(businessType)
+      ? businessType
+      : 'GENERAL_STORE';
+
     const slugBase = cleanShopName
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
@@ -441,6 +450,7 @@ const registerStoreAndTrial = async (req, res, next) => {
         city: city.trim(),
         status: 'trial',
         plan: 'trial',
+        businessType: normalizedBusinessType,
         subscriptionExpiresAt: trialExpiry,
         maxUsers: 5,
         maxProducts: 1000,
@@ -501,6 +511,7 @@ const registerStoreAndTrial = async (req, res, next) => {
       city: city.trim(),
       status: 'trial',
       plan: 'trial',
+      businessType: normalizedBusinessType,
       subscriptionExpiresAt: trialExpiry,
       settings: {
         currency: 'PKR',
@@ -612,6 +623,44 @@ const impersonateTenant = async (req, res, next) => {
   }
 };
 
+// @desc    Switch or update active business module (FOOTWEAR, GARMENTS, GENERAL_STORE, PERFUME)
+// @route   PUT /api/auth/business-type
+// @access  Private (Store Owner)
+const updateBusinessType = async (req, res, next) => {
+  try {
+    const { businessType } = req.body;
+    const allowed = ['FOOTWEAR', 'GARMENTS', 'GENERAL_STORE', 'PERFUME'];
+    if (!allowed.includes(businessType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid business module. Must be FOOTWEAR, GARMENTS, GENERAL_STORE, or PERFUME.',
+      });
+    }
+
+    const tenantId = req.user.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ success: false, message: 'No tenant found for this user.' });
+    }
+
+    if (global.useMemoryStore) {
+      const t = memoryStore.tenants.find((item) => item._id === tenantId);
+      if (t) {
+        t.businessType = businessType;
+      }
+    } else {
+      await Tenant.findByIdAndUpdate(tenantId, { businessType });
+    }
+
+    res.status(200).json({
+      success: true,
+      businessType,
+      message: `Store successfully switched to ${businessType} module.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const logout = async (req, res) => {
   res.cookie('token', 'none', {
     expires: new Date(Date.now() + 10 * 1000),
@@ -630,5 +679,6 @@ module.exports = {
   impersonateTenant,
   identifyStore,
   getMe,
+  updateBusinessType,
   logout,
 };

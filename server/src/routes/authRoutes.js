@@ -8,6 +8,7 @@ const {
   impersonateTenant,
   identifyStore,
   getMe,
+  updateBusinessType,
   logout,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middleware/authMiddleware');
@@ -71,6 +72,7 @@ router.post('/register', authLimiter, sanitizeAuthInput, register);
 router.post('/register-trial', authLimiter, sanitizeAuthInput, registerStoreAndTrial);
 router.post('/impersonate/:tenantId', protect, authorize('SUPER_ADMIN'), impersonateTenant);
 router.get('/me', protect, getMe);
+router.put('/business-type', protect, updateBusinessType);
 router.post('/logout', logout);
 
 module.exports = router;

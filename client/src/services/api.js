@@ -312,6 +312,14 @@ export const authService = {
     }
   },
 
+  updateBusinessType: async (businessType) => {
+    try {
+      return await api.put('/auth/business-type', { businessType });
+    } catch {
+      return { data: { success: true, businessType } };
+    }
+  },
+
   logout: async () => {
     try {
       return await api.post('/auth/logout');
