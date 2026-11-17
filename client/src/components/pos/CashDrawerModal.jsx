@@ -68,6 +68,14 @@ export default function CashDrawerModal({ isOpen, onClose }) {
 
   const isAllowed = planLimits?.allowDrawerReconciliation ?? true;
 
+  // Safe Fallback:
+  const stats = summary || {};
+  const statsData = stats || {};
+  const cashSales = statsData.cashSales ?? 0;
+  const udharGiven = statsData.udharGiven ?? statsData.khataWasooliCash ?? 0;
+  const netProfit = statsData.netProfit ?? 0;
+  const totalReceivable = statsData.totalReceivable ?? 0;
+
   // Calculate counted cash from note counter
   const countedCash = Object.entries(denominationCounts).reduce(
     (sum, [note, count]) => sum + Number(note) * (Number(count) || 0),
@@ -76,9 +84,9 @@ export default function CashDrawerModal({ isOpen, onClose }) {
 
   const expectedCash =
     Number(openingCash) +
-    Number(summary.cashSales || 0) +
-    Number(summary.khataWasooliCash || 0) -
-    Number(summary.cashExpenses || 0);
+    Number(cashSales) +
+    Number(statsData.khataWasooliCash || 0) -
+    Number(statsData.cashExpenses || 0);
 
   const difference = countedCash - expectedCash;
 
@@ -310,19 +318,19 @@ export default function CashDrawerModal({ isOpen, onClose }) {
                     <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                       <span className="text-[11px] text-slate-500 block">+ Cash Sales</span>
                       <span className="font-bold text-emerald-600 text-sm">
-                        {formatCurrency(summary.cashSales)}
+                        {formatCurrency(cashSales)}
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                       <span className="text-[11px] text-slate-500 block">+ Khata Wasooli</span>
                       <span className="font-bold text-blue-600 text-sm">
-                        {formatCurrency(summary.khataWasooliCash)}
+                        {formatCurrency(statsData.khataWasooliCash ?? 0)}
                       </span>
                     </div>
                     <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                       <span className="text-[11px] text-slate-500 block">- Cash Expenses</span>
                       <span className="font-bold text-rose-600 text-sm">
-                        {formatCurrency(summary.cashExpenses)}
+                        {formatCurrency(statsData.cashExpenses ?? 0)}
                       </span>
                     </div>
                   </div>

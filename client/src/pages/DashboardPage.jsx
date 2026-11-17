@@ -240,6 +240,14 @@ const DashboardPage = () => {
     periodLabel = 'Today',
   } = data || {};
 
+  // Safe Fallback for stats & summary data:
+  const stats = data?.stats || data?.summary || summary || {};
+  const statsData = stats || {};
+  const cashSales = statsData.cashSales ?? statsData.cashCollected ?? statsData.totalSales ?? 0;
+  const udharGiven = statsData.udharGiven ?? statsData.khataUdharGiven ?? statsData.totalUdhar ?? 0;
+  const netProfit = statsData.netProfit ?? 0;
+  const totalReceivable = statsData.totalReceivable ?? statsData.totalMarketDebt ?? statsData.marketUdhar ?? 0;
+
   const safeLowStockProducts = (Array.isArray(lowStockProducts)
     ? lowStockProducts
     : Array.isArray(data?.products)
@@ -256,11 +264,11 @@ const DashboardPage = () => {
   const safeTopSellingProducts = Array.isArray(topSellingProducts) ? topSellingProducts : [];
 
   const lowStockCount =
-    summary.lowStockCount !== undefined
-      ? summary.lowStockCount
+    statsData.lowStockCount !== undefined
+      ? statsData.lowStockCount
       : safeLowStockProducts.length;
 
-  const growth = summary.revenueGrowthPercent !== undefined ? summary.revenueGrowthPercent : 0;
+  const growth = statsData.revenueGrowthPercent !== undefined ? statsData.revenueGrowthPercent : 0;
   const isPositiveGrowth = growth >= 0;
 
   return (
@@ -395,7 +403,7 @@ const DashboardPage = () => {
               <div className="transform transition duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 <StatCard
                   title={`${periodLabel} Total Sales`}
-                  value={formatCurrency(summary.totalSales || 0)}
+                  value={formatCurrency(statsData.totalSales ?? cashSales ?? 0)}
                   icon={TrendingUp}
                   color="blue"
                   subtitle={
@@ -423,14 +431,14 @@ const DashboardPage = () => {
               <div className="transform transition duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 <StatCard
                   title={`${periodLabel} Net Profit`}
-                  value={formatCurrency(summary.netProfit || 0)}
+                  value={formatCurrency(netProfit)}
                   icon={DollarSign}
                   color="emerald"
                   subtitle={
                     <span className="text-slate-500 font-semibold flex items-center gap-1">
                       <span>Margin:</span>
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {summary.profitMargin || 0}%
+                        {statsData.profitMargin ?? 0}%
                       </span>
                       <span className="text-[10px] text-slate-400">(After Expenses)</span>
                     </span>
@@ -442,7 +450,7 @@ const DashboardPage = () => {
               <div className="transform transition duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 <StatCard
                   title={`${periodLabel} Expenses`}
-                  value={formatCurrency(summary.totalExpenses || 0)}
+                  value={formatCurrency(statsData.totalExpenses ?? 0)}
                   icon={Wallet}
                   color="rose"
                   subtitle={
@@ -461,14 +469,14 @@ const DashboardPage = () => {
               <div className="transform transition duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 <StatCard
                   title={`${periodLabel} Orders`}
-                  value={`${summary.orderCount || 0} Bills`}
+                  value={`${statsData.orderCount ?? 0} Bills`}
                   icon={Receipt}
                   color="indigo"
                   subtitle={
                     <span className="text-slate-500 font-medium">
                       AOV:{' '}
                       <strong className="text-slate-800 dark:text-slate-200">
-                        {formatCurrency(summary.averageOrderValue || 0)}
+                        {formatCurrency(statsData.averageOrderValue ?? 0)}
                       </strong>
                     </span>
                   }
@@ -479,7 +487,7 @@ const DashboardPage = () => {
               <div className="transform transition duration-300 hover:scale-[1.02] hover:-translate-y-0.5">
                 <StatCard
                   title={`${periodLabel} Udhar Given`}
-                  value={formatCurrency(summary.khataUdharGiven || 0)}
+                  value={formatCurrency(udharGiven)}
                   icon={BookOpen}
                   color="amber"
                   subtitle={
@@ -543,7 +551,7 @@ const DashboardPage = () => {
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                   <span className="font-medium text-slate-600 dark:text-slate-400">Cash:</span>
                   <span className="font-extrabold text-slate-900 dark:text-white">
-                    {formatCurrency(summary.cashCollected || 0)}
+                    {formatCurrency(cashSales)}
                   </span>
                 </div>
 
@@ -551,7 +559,7 @@ const DashboardPage = () => {
                   <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
                   <span className="font-medium text-slate-600 dark:text-slate-400">Card:</span>
                   <span className="font-extrabold text-slate-900 dark:text-white">
-                    {formatCurrency(summary.cardCollected || 0)}
+                    {formatCurrency(statsData.cardCollected ?? 0)}
                   </span>
                 </div>
 
@@ -559,9 +567,19 @@ const DashboardPage = () => {
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                   <span className="font-medium text-slate-600 dark:text-slate-400">Khata Udhar:</span>
                   <span className="font-extrabold text-amber-600 dark:text-amber-400">
-                    {formatCurrency(summary.khataUdharGiven || 0)}
+                    {formatCurrency(udharGiven)}
                   </span>
                 </div>
+
+                {totalReceivable > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                    <span className="font-medium text-slate-600 dark:text-slate-400">Market Udhar:</span>
+                    <span className="font-extrabold text-rose-600 dark:text-rose-400">
+                      {formatCurrency(totalReceivable)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Quick POS New Sale Button */}

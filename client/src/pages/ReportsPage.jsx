@@ -70,15 +70,7 @@ const ReportsPage = () => {
   }, [fetchVisualReports]);
 
   const {
-    kpis = {
-      grossSales: 0,
-      cogs: 0,
-      netProfit: 0,
-      profitMargin: 0,
-      marketUdhar: 0,
-      totalOrders: 0,
-      averageOrderValue: 0,
-    },
+    kpis: rawKpis = {},
     timelineChart = [],
     paymentMethods = [],
     topProducts = [],
@@ -87,11 +79,30 @@ const ReportsPage = () => {
     dateRange = {},
   } = data || {};
 
+  // Safe Fallback for stats:
+  const stats = data?.stats || data?.kpis || data?.summary || rawKpis || {};
+  const statsData = stats || {};
+  const cashSales = statsData.cashSales ?? statsData.cashCollected ?? statsData.grossSales ?? 0;
+  const udharGiven = statsData.udharGiven ?? statsData.marketUdhar ?? statsData.khataUdharGiven ?? 0;
+  const netProfit = statsData.netProfit ?? 0;
+  const totalReceivable = statsData.totalReceivable ?? statsData.marketUdhar ?? 0;
+
+  const kpis = {
+    grossSales: statsData.grossSales ?? cashSales,
+    cogs: statsData.cogs ?? 0,
+    netProfit: netProfit,
+    profitMargin: statsData.profitMargin ?? 0,
+    marketUdhar: totalReceivable,
+    totalOrders: statsData.totalOrders ?? 0,
+    averageOrderValue: statsData.averageOrderValue ?? 0,
+    ...rawKpis,
+  };
+
   // Direct breakdown calculation for Cash & Online vs Khata Collected
-  const cashCollected = Number(paymentMethods.find((p) => p.method === 'CASH')?.amount || 0);
+  const cashCollected = Number(paymentMethods.find((p) => p.method === 'CASH')?.amount || cashSales || 0);
   const cardCollected = Number(paymentMethods.find((p) => p.method === 'CARD')?.amount || 0);
   const collectedCashAndBank = cashCollected + cardCollected;
-  const outstandingKhata = Number(kpis.marketUdhar || paymentMethods.find((p) => p.method === 'KHATA')?.amount || 0);
+  const outstandingKhata = Number(totalReceivable || paymentMethods.find((p) => p.method === 'KHATA')?.amount || 0);
 
   const safeRecentOrders = Array.isArray(recentOrders) && recentOrders.length > 0
     ? recentOrders

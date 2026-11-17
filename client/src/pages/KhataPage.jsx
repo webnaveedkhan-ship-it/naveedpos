@@ -493,6 +493,14 @@ const KhataPage = () => {
   const udharCreditLimit = Number(currentUdharCust?.creditLimit || 0);
   const isLimitExceeded = udharCreditLimit > 0 && totalAfterUdhar > udharCreditLimit;
 
+  // Safe Fallback:
+  const stats = metrics?.stats || metrics || {};
+  const statsData = stats || {};
+  const cashSales = statsData.cashSales ?? statsData.todayWasooli ?? todayWasooliCalc ?? 0;
+  const udharGiven = statsData.udharGiven ?? statsData.todayUdhar ?? todayUdharCalc ?? 0;
+  const netProfit = statsData.netProfit ?? 0;
+  const totalReceivable = statsData.totalReceivable ?? statsData.totalMarketDebt ?? statsData.totalUdhar ?? 0;
+
   return (
     <div className="flex-1 p-6 overflow-y-auto bg-slate-50 dark:bg-slate-950 space-y-6">
       {/* Page Header */}
@@ -546,28 +554,28 @@ const KhataPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Market Udhar"
-          value={formatCurrency(metrics?.totalMarketDebt ?? metrics?.totalUdhar ?? 0)}
+          value={formatCurrency(totalReceivable)}
           icon={BadgeAlert}
           color="rose"
           subtitle="Total outstanding money in market"
         />
         <StatCard
           title="Today's Wasooli"
-          value={formatCurrency(metrics?.todayWasooli || todayWasooliCalc || 0)}
+          value={formatCurrency(cashSales)}
           icon={ArrowDownLeft}
           color="brand"
           subtitle="Cash & online collections today"
         />
         <StatCard
           title="Today's Udhar Given"
-          value={formatCurrency(metrics?.todayUdhar || todayUdharCalc || 0)}
+          value={formatCurrency(udharGiven)}
           icon={ArrowUpRight}
           color="amber"
           subtitle="Credit given to customers today"
         />
         <StatCard
           title="Active Khata Debtors"
-          value={`${metrics?.totalDebtorsCount ?? 0} / ${safeCustomers.length}`}
+          value={`${statsData.totalDebtorsCount ?? metrics?.totalDebtorsCount ?? 0} / ${safeCustomers.length}`}
           icon={Wallet}
           color="blue"
           subtitle="Customers currently owing money"

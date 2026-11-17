@@ -124,7 +124,18 @@ const getCashDrawerSummaryToday = async (req, res, next) => {
         cashExpenses,
         netCashChange,
         expectedCash: netCashChange,
+        udharGiven: 0,
+        netProfit: 0,
+        totalReceivable: 0,
         timestamp: new Date(),
+      },
+      stats: {
+        cashSales,
+        udharGiven: 0,
+        netProfit: 0,
+        totalReceivable: 0,
+        cashExpenses,
+        khataWasooliCash,
       },
     });
   } catch (error) {
