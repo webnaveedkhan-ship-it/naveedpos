@@ -61,7 +61,7 @@ const itemVariants = {
 };
 
 const DashboardPage = () => {
-  const { user } = useAuth();
+  const { user, tenantPlan } = useAuth();
   const navigate = useNavigate();
 
   // Active reporting period state: 'today' | 'this_week' | 'this_month' | 'custom'
@@ -170,7 +170,23 @@ const DashboardPage = () => {
     document.body.removeChild(link);
   };
 
-  const isTrial = user?.tenantStatus === 'trial' || user?.tenantPlan === 'trial';
+  const isTrial =
+    tenantPlan === 'trial' ||
+    user?.tenantStatus === 'trial' ||
+    user?.tenantPlan === 'trial' ||
+    user?.plan === 'trial' ||
+    user?.plan === 'TRIAL' ||
+    !user?.plan;
+
+  const remainingDays = (() => {
+    const expiresAt = user?.subscriptionExpiresAt || user?.trialEndsAt;
+    if (expiresAt) {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return days > 0 ? days : 0;
+    }
+    return user?.daysRemaining ?? 14;
+  })();
 
   const [restockToast, setRestockToast] = useState(null);
 
@@ -323,7 +339,7 @@ const DashboardPage = () => {
               <h4 className="font-extrabold text-sm tracking-tight flex items-center gap-1.5">
                 <span>{isTrial ? '14-Day Free Trial Active' : 'Subscription Alert'}</span>
                 <span className="px-2 py-0.5 bg-amber-400 text-slate-950 font-black text-[10px] rounded-full uppercase">
-                  {user?.daysRemaining !== undefined ? `${user.daysRemaining} Days Left` : '12 Days Left'}
+                  {remainingDays} Days Left
                 </span>
               </h4>
               <p className="text-xs text-white/80 mt-0.5">

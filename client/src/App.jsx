@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
+import LandingDashboardPage from './pages/LandingDashboardPage';
 import BarcodeGeneratorPage from './pages/BarcodeGeneratorPage';
 import SuppliersPage from './pages/SuppliersPage';
 import ReportsPage from './pages/ReportsPage';
@@ -122,7 +123,7 @@ const RootRedirect = () => {
 
   const hasSession = isAuthenticated || (!!savedToken && !!effectiveUser);
   if (!hasSession) {
-    return <Navigate to="/login" replace />;
+    return <LandingDashboardPage />;
   }
 
   const effectiveRole = (effectiveUser?.role || '').toUpperCase();
@@ -151,6 +152,9 @@ function App() {
             {/* ========================================================== */}
             {/* A. PUBLIC AUTHENTICATION & ONBOARDING ROUTES               */}
             {/* ========================================================== */}
+            <Route path="/home" element={<LandingDashboardPage />} />
+            <Route path="/landing" element={<LandingDashboardPage />} />
+            <Route path="/showcase" element={<LandingDashboardPage />} />
             <Route path="/login" element={<LoginPage defaultTab="login" />} />
             <Route path="/store-login" element={<LoginPage defaultTab="login" />} />
             <Route path="/register" element={<SignUpPage />} />
