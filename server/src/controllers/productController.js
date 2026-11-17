@@ -263,6 +263,9 @@ const createProduct = async (req, res, next) => {
       }
     }
 
+    const effectivePrice = Number(price !== undefined && price !== '' ? price : req.body.sellingPrice);
+    const fallbackImg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop';
+
     if (global.useMemoryStore) {
       const exists = memoryStore.products.find(
         (p) => p && p.sku === (sku || '').toUpperCase() && (p.tenantId || '').toString() === (tenantId || '').toString()
@@ -283,9 +286,9 @@ const createProduct = async (req, res, next) => {
         _id: `prod_${Date.now()}`,
         tenantId,
         title,
-        sku: sku.toUpperCase(),
-        category,
-        price: Number(price),
+        sku: (sku || '').toUpperCase(),
+        category: category || 'General Retail',
+        price: effectivePrice,
         costPrice: Number(costPrice) || 0,
         stockQuantity: Number(stockQuantity) || 0,
         lowStockAlert: Number(lowStockAlert) || 5,
@@ -293,17 +296,17 @@ const createProduct = async (req, res, next) => {
         allowFractional: isFractional,
         cartonSize: Number(cartonSize) || 1,
         cartonPrice: Number(cartonPrice) || 0,
-        image: imagePath,
+        image: imagePath || fallbackImg,
         description: description || '',
         variants: variants || [],
         status: 'active',
         createdAt: new Date(),
       };
-      memoryStore.products.push(newProduct);
-      return res.status(201).json({ success: true, message: 'Product created', product: newProduct });
+      memoryStore.products.unshift(newProduct);
+      return res.status(201).json({ success: true, message: 'Product created successfully', product: newProduct });
     }
 
-    const existingProduct = await Product.findOne({ sku: sku.toUpperCase(), tenantId });
+    const existingProduct = await Product.findOne({ sku: (sku || '').toUpperCase(), tenantId });
     if (existingProduct) {
       return res.status(400).json({
         success: false,
@@ -323,9 +326,9 @@ const createProduct = async (req, res, next) => {
     const product = await Product.create({
       tenantId,
       title,
-      sku: sku.toUpperCase(),
-      category,
-      price: Number(price),
+      sku: (sku || '').toUpperCase(),
+      category: category || 'General Retail',
+      price: effectivePrice,
       costPrice: Number(costPrice) || 0,
       stockQuantity: Number(stockQuantity) || 0,
       lowStockAlert: Number(lowStockAlert) || 5,
@@ -333,7 +336,7 @@ const createProduct = async (req, res, next) => {
       allowFractional: isFractional,
       cartonSize: Number(cartonSize) || 1,
       cartonPrice: Number(cartonPrice) || 0,
-      image: imagePath,
+      image: imagePath || fallbackImg,
       description: description || '',
       variants: variants || [],
     });

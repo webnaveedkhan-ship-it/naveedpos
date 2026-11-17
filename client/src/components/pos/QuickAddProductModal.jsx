@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import ProductImageUploader from '../common/ProductImageUploader';
 import { productService } from '../../services/api';
@@ -17,10 +17,19 @@ const CATEGORY_PRESETS = [
   'Household & Cleaning',
 ];
 
+const generateRandomSku = (cat = 'General Retail') => {
+  const cleanPrefix = (cat || 'ITM')
+    .replace(/[^a-zA-Z]/g, '')
+    .slice(0, 3)
+    .toUpperCase() || 'ITM';
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `${cleanPrefix}-${rand}`;
+};
+
 const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
-    sku: '',
+    sku: generateRandomSku('General Retail'),
     category: 'General Retail',
     price: '',
     costPrice: '',
@@ -36,6 +45,16 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setErrorMsg('');
+      setFormData((prev) => ({
+        ...prev,
+        sku: prev.sku || generateRandomSku(prev.category),
+      }));
+    }
+  }, [isOpen]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

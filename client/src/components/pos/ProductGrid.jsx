@@ -158,6 +158,19 @@ const ProductGrid = ({
             </div>
           </div>
 
+          {/* Prominent Quick Add Product Button */}
+          {onOpenQuickAdd && (
+            <button
+              type="button"
+              onClick={onOpenQuickAdd}
+              className="px-3 sm:px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm rounded-2xl flex items-center space-x-1.5 active:scale-95 transition-all shadow-md shadow-emerald-600/30 flex-shrink-0 min-tap"
+              title="Quick Add Product to POS (نئی پروڈکٹ شامل کریں)"
+            >
+              <PlusCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+              <span className="whitespace-nowrap font-black">+ Add Product</span>
+            </button>
+          )}
+
           {/* Mobile Cart Counter Trigger Pill (Visible on mobile < lg) */}
           <button
             type="button"

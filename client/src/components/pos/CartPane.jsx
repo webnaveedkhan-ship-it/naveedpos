@@ -12,7 +12,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 
-const CartPane = ({ onOpenPayment }) => {
+const CartPane = ({ onOpenPayment, onOpenQuickAdd }) => {
   const {
     cartItems,
     incrementItem,
@@ -74,9 +74,19 @@ const CartPane = ({ onOpenPayment }) => {
             <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">
               Your cart is empty
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-[200px]">
-              Tap products from the catalog or scan barcodes to begin sale
+            <p className="text-xs text-slate-400 mt-1 max-w-[200px] mb-3">
+              Tap products from catalog or scan barcodes to begin sale
             </p>
+            {onOpenQuickAdd && (
+              <button
+                type="button"
+                onClick={onOpenQuickAdd}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center space-x-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Add New Product</span>
+              </button>
+            )}
           </div>
         ) : (
           cartItems.map((item) => {

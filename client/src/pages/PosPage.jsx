@@ -24,6 +24,7 @@ const PosPage = () => {
   const [isCashDrawerOpen, setIsCashDrawerOpen] = useState(false);
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [successToast, setSuccessToast] = useState(null);
 
   const { addToCart, totalItemCount, grandTotal } = useCart();
 
@@ -70,13 +71,17 @@ const PosPage = () => {
 
   const handleProductCreated = (newProduct) => {
     if (!newProduct) return;
-    setProducts((prev) => [newProduct, ...(Array.isArray(prev) ? prev : [])]);
+    setProducts((prev) => [newProduct, ...(Array.isArray(prev) ? prev.filter((p) => p._id !== newProduct._id) : [])]);
+    setActiveCategory('All');
     if (newProduct.category && !(categories || []).includes(newProduct.category)) {
       setCategories((prev) => [...(Array.isArray(prev) ? prev : ['All']), newProduct.category]);
     }
-    if (newProduct.stockQuantity > 0) {
+    if (Number(newProduct.stockQuantity) > 0) {
       addToCart(newProduct, 1);
     }
+    setSuccessToast(`"${newProduct.title}" added to catalog & cart!`);
+    setTimeout(() => setSuccessToast(null), 4000);
+    fetchCatalog();
   };
 
   return (
@@ -95,8 +100,19 @@ const PosPage = () => {
 
       {/* Desktop Cart Pane (Visible on lg and larger) */}
       <div className="hidden lg:block h-full">
-        <CartPane onOpenPayment={() => setIsPaymentOpen(true)} />
+        <CartPane
+          onOpenPayment={() => setIsPaymentOpen(true)}
+          onOpenQuickAdd={() => setIsQuickAddOpen(true)}
+        />
       </div>
+
+      {/* Success Notification Toast */}
+      {successToast && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-5 py-2.5 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-black animate-fadeIn border border-emerald-400/40">
+          <span>✓</span>
+          <span>{successToast}</span>
+        </div>
+      )}
 
       {/* Floating Checkout Action Bar (Visible only on Mobile < lg) */}
       {totalItemCount > 0 && (
