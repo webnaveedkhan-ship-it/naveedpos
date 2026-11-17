@@ -363,9 +363,6 @@ const StoreLayout = () => {
         </div>
       </header>
 
-      {/* Quick Action Navigation Bar */}
-      <QuickActionHeaderBar />
-
       {/* ------------------------------------------------------------- */}
       {/* 2. BODY LAYOUT: DESKTOP SIDEBAR + MAIN CONTENT                */}
       {/* ------------------------------------------------------------- */}
@@ -582,6 +579,7 @@ const StoreLayout = () => {
         {/* 3. MAIN OUTLET CONTENT AREA                                   */}
         {/* ------------------------------------------------------------- */}
         <main className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950 focus:outline-none pb-16 lg:pb-0">
+          <QuickActionHeaderBar />
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
