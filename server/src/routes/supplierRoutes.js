@@ -6,8 +6,10 @@ const {
   recordSupplierPayment,
 } = require('../controllers/supplierController');
 const { protect } = require('../middleware/authMiddleware');
+const { tenantMiddleware } = require('../middleware/tenantMiddleware');
 
 router.use(protect);
+router.use(tenantMiddleware);
 
 router.route('/')
   .get(getSuppliers)

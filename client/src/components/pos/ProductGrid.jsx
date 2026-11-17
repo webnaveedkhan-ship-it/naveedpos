@@ -62,9 +62,11 @@ const ProductGrid = ({
       if (!product) return false;
       const matchesCategory =
         activeCategory === 'All' || product.category === activeCategory;
+      const prodTitle = product.name || product.title || '';
+      const prodBarcode = product.barcode || product.sku || '';
       const matchesSearch =
-        (product.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.sku || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        prodTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        prodBarcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (Array.isArray(product.variants) &&
           product.variants.some(
             (v) =>
@@ -104,10 +106,13 @@ const ProductGrid = ({
     if (e.key === 'Enter' && searchTerm.trim() !== '') {
       e.preventDefault();
       const trimmed = searchTerm.trim().toUpperCase();
-      const exactSkuMatch = safeProducts.find((p) => p && p.sku === trimmed);
+      const exactSkuMatch = safeProducts.find(
+        (p) => p && ((p.barcode || p.sku || '').toUpperCase() === trimmed)
+      );
 
       if (exactSkuMatch) {
-        if (exactSkuMatch.stockQuantity > 0) {
+        const matchStock = Number(exactSkuMatch.stock !== undefined ? exactSkuMatch.stock : exactSkuMatch.stockQuantity || 0);
+        if (matchStock > 0) {
           handleItemTap(exactSkuMatch);
           setSearchTerm('');
         }
@@ -285,14 +290,16 @@ const ProductGrid = ({
               if (!product) return null;
               const cartItem = cartItems.find((i) => i.product === product._id);
               const inCartQty = cartItem ? cartItem.quantity : 0;
-              const stockQty = Number(product?.stockQuantity ?? 0);
+              const stockQty = Number(product?.stock ?? product?.stockQuantity ?? 0);
               const isOutOfStock = stockQty <= 0;
-              const lowAlert = Number(product?.lowStockAlert ?? product?.lowStockThreshold ?? 5);
+              const lowAlert = Number(product?.minStockAlert ?? product?.lowStockAlert ?? product?.lowStockThreshold ?? 5);
               const isLowStock = !isOutOfStock && stockQty <= lowAlert;
               const remainingStock = stockQty - inCartQty;
               const imgSrc = product.image || product.imageUrl || DEFAULT_FALLBACK_IMAGE;
               const isJustAdded = addedEffectId === product._id;
-              const price = Number(product?.price ?? product?.sellingPrice ?? 0);
+              const price = Number(product?.salePrice ?? product?.price ?? product?.sellingPrice ?? 0);
+              const prodTitle = product.name || product.title || 'Item';
+              const prodSku = product.barcode || product.sku || '';
 
               return (
                 <div
@@ -354,10 +361,10 @@ const ProductGrid = ({
                   <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="text-[10px] font-mono text-slate-400 mb-0.5 truncate">
-                        {product.sku}
+                        {prodSku}
                       </div>
                       <h4 className="font-bold text-xs sm:text-sm text-white line-clamp-2 leading-snug mb-1.5">
-                        {product.title}
+                        {prodTitle}
                       </h4>
                     </div>
 
@@ -365,7 +372,7 @@ const ProductGrid = ({
                     <div className="pt-2 border-t border-slate-800/80 space-y-1">
                       <div className="flex items-baseline justify-between">
                         <div className="text-sm sm:text-base font-black text-emerald-400">
-                          {formatCurrency(product.price)}
+                          {formatCurrency(price)}
                         </div>
                         <span className="text-[10px] text-slate-400 font-medium">
                           /{product.unitType || 'pc'}

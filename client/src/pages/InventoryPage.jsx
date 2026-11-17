@@ -17,7 +17,30 @@ import {
   CheckCircle,
   Barcode,
   Zap,
+  Layers,
 } from 'lucide-react';
+
+const INDUSTRY_FILTERS = [
+  { id: 'All', label: 'All Industries', icon: '🌐' },
+  { id: 'GENERAL_STORE', label: 'General Store', icon: '🏬' },
+  { id: 'FOOTWEAR', label: 'Shoes / Footwear', icon: '👟' },
+  { id: 'GARMENTS', label: 'Garments & Apparel', icon: '👕' },
+  { id: 'PERFUME', label: 'Perfumes', icon: '🧴' },
+];
+
+const getIndustryBadge = (bType) => {
+  switch ((bType || '').toUpperCase()) {
+    case 'FOOTWEAR':
+      return { label: '👟 Shoes', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300' };
+    case 'GARMENTS':
+      return { label: '👕 Garments', cls: 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300' };
+    case 'PERFUME':
+      return { label: '🧴 Perfume', cls: 'bg-pink-100 text-pink-800 dark:bg-pink-950/60 dark:text-pink-300' };
+    case 'GENERAL_STORE':
+    default:
+      return { label: '🏬 General', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300' };
+  }
+};
 
 const InventoryPage = () => {
   const { isAdmin } = useAuth();
@@ -25,6 +48,7 @@ const InventoryPage = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState(['All']);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedIndustry, setSelectedIndustry] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -70,6 +94,7 @@ const InventoryPage = () => {
         limit: 15,
         search: searchTerm,
         category: selectedCategory !== 'All' ? selectedCategory : undefined,
+        businessType: selectedIndustry !== 'All' ? selectedIndustry : undefined,
         lowStock: lowStockOnly ? 'true' : 'false',
       };
 
@@ -88,7 +113,7 @@ const InventoryPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm, selectedCategory, lowStockOnly]);
+  }, [page, searchTerm, selectedCategory, selectedIndustry, lowStockOnly]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -125,24 +150,28 @@ const InventoryPage = () => {
       setEditingProduct(null);
       setIsModalOpen(true);
     };
+
     window.addEventListener('open-add-product', handleOpenAdd);
     return () => window.removeEventListener('open-add-product', handleOpenAdd);
   }, []);
 
-  // Handle Add/Edit Save
-  const handleSaveProduct = async (formData, productId) => {
-    if (productId) {
-      await productService.updateProduct(productId, formData);
-      showNotification('Product details updated successfully');
-    } else {
-      await productService.createProduct(formData);
-      showNotification('New product added to inventory');
+  const handleSaveProduct = async (formData, id) => {
+    try {
+      if (id) {
+        await productService.updateProduct(id, formData);
+        showNotification('Product updated successfully');
+      } else {
+        await productService.createProduct(formData);
+        showNotification('Product created successfully');
+      }
+      fetchProducts();
+      fetchCategories();
+    } catch (err) {
+      console.error('Save product error:', err);
+      throw err;
     }
-    fetchProducts();
-    fetchCategories();
   };
 
-  // Handle Delete
   const handleDeleteProduct = async (id, title) => {
     if (window.confirm(`Are you sure you want to remove "${title}" from inventory?`)) {
       try {
@@ -158,14 +187,14 @@ const InventoryPage = () => {
   return (
     <div className="flex-1 p-3 sm:p-6 overflow-y-auto bg-slate-50 dark:bg-slate-950 animate-fadeIn">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <Package className="w-6 h-6 text-brand-600" />
-            Inventory & Catalog
+            Inventory &amp; Multi-Industry Catalog
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Manage product items, prices, barcodes, and track low-stock thresholds ({totalCount} total products)
+            Manage product items, prices, barcodes, industry variants, and low-stock alerts ({totalCount} total products)
           </p>
         </div>
 
@@ -215,6 +244,31 @@ const InventoryPage = () => {
         </div>
       )}
 
+      {/* Multi-Industry Filter Pill Selector */}
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-none">
+        {INDUSTRY_FILTERS.map((ind) => {
+          const active = selectedIndustry === ind.id;
+          return (
+            <button
+              key={ind.id}
+              type="button"
+              onClick={() => {
+                setSelectedIndustry(ind.id);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center space-x-1.5 ${
+                active
+                  ? 'bg-brand-600 text-white shadow-sm ring-2 ring-brand-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+              }`}
+            >
+              <span>{ind.icon}</span>
+              <span>{ind.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Filters & Search Toolbar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xs mb-6 flex flex-col md:flex-row items-center gap-3">
         {/* Search */}
@@ -229,7 +283,7 @@ const InventoryPage = () => {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by title or SKU barcode..."
+            placeholder="Search by title, SKU, or variant size/color..."
             className="w-full min-h-[44px] pl-9 pr-3 py-2 text-base sm:text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
           />
         </div>
@@ -258,33 +312,33 @@ const InventoryPage = () => {
             setLowStockOnly(!lowStockOnly);
             setPage(1);
           }}
-          className={`w-full md:w-auto min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition border active:scale-[0.97] ${
+          className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-1.5 w-full md:w-auto border ${
             lowStockOnly
-              ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
               : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
           }`}
         >
-          <AlertTriangle className="w-3.5 h-3.5" />
-          <span>Low Stock Alert</span>
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+          <span>Low Stock Only</span>
         </button>
       </div>
 
-      {/* Inventory Table Container */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
-        {/* Mobile View: Scannable Product Cards (< md) */}
-        <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+      {/* Main Inventory Card / Table Container */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
+        {/* Mobile View: Cards */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
           {loading ? (
-            <div className="py-12 text-center text-slate-400">
+            <div className="p-8 text-center text-slate-400 text-xs">
               <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
               Loading inventory records...
             </div>
           ) : safeProducts.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 p-6 flex flex-col items-center">
-              <Package className="w-12 h-12 stroke-1 mb-2 text-slate-500" />
+            <div className="p-8 text-center text-slate-400">
+              <Package className="w-10 h-10 stroke-1 mx-auto mb-2 text-slate-500" />
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No products found</p>
-              <p className="text-xs text-slate-500 mt-1 mb-3">Add items to manage catalog and start billing</p>
+              <p className="text-xs text-slate-500 mt-0.5 mb-3">Add your first product to begin billing in POS</p>
               {isAdmin && (
-                <div className="flex items-center gap-2 flex-wrap justify-center">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleSeedDummyProducts}
@@ -300,10 +354,10 @@ const InventoryPage = () => {
                       setEditingProduct(null);
                       setIsModalOpen(true);
                     }}
-                    className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                    className="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
                   >
                     <Plus className="w-4 h-4" />
-                    <span>Add Product</span>
+                    <span>+ Add Product</span>
                   </button>
                 </div>
               )}
@@ -311,24 +365,38 @@ const InventoryPage = () => {
           ) : (
             safeProducts.map((item) => {
               if (!item) return null;
-              const price = Number(item.price || 0);
+              const prodTitle = item.name || item.title || 'Untitled Item';
+              const prodBarcode = item.barcode || item.sku || 'N/A';
+              const price = Number(item.salePrice !== undefined ? item.salePrice : item.price || 0);
               const costPrice = Number(item.costPrice || 0);
+              const stock = item.stock !== undefined ? item.stock : item.stockQuantity;
+              const minAlert = item.minStockAlert !== undefined ? item.minStockAlert : item.lowStockAlert;
               const profit = price - costPrice;
               const marginPct = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
+              const indBadge = getIndustryBadge(item.businessType);
+
               return (
                 <div key={item._id} className="p-3.5 space-y-2.5 bg-slate-50/50 dark:bg-slate-950/40">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-slate-900 dark:text-white text-sm leading-tight">
-                        {item.title}
+                        {prodTitle}
                       </div>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className="font-mono font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] text-slate-700 dark:text-slate-300">
-                          {item.sku}
+                          {prodBarcode}
+                        </span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${indBadge.cls}`}>
+                          {indBadge.label}
                         </span>
                         <span className="text-[11px] text-slate-500 font-medium">
                           {item.category}
                         </span>
+                        {item.variants && item.variants.length > 0 && (
+                          <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                            {item.variants.length} variants
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -345,8 +413,8 @@ const InventoryPage = () => {
 
                   <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800/80">
                     <StockBadge
-                      stockQuantity={item.stockQuantity}
-                      lowStockAlert={item.lowStockAlert}
+                      stockQuantity={stock}
+                      lowStockAlert={minAlert}
                     />
 
                     {isAdmin && (
@@ -365,7 +433,7 @@ const InventoryPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteProduct(item._id, item.title)}
+                          onClick={() => handleDeleteProduct(item._id, prodTitle)}
                           className="min-h-[38px] px-2.5 py-1.5 text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 hover:bg-red-100 dark:bg-red-950/50 rounded-xl active:scale-[0.97] transition flex items-center"
                           title="Delete Product"
                         >
@@ -380,14 +448,14 @@ const InventoryPage = () => {
           )}
         </div>
 
-        {/* Desktop View: Full Data Table (hidden on mobile, visible md:block) */}
+        {/* Desktop View: Full Data Table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-[11px] uppercase tracking-wider text-slate-500 font-bold">
               <tr>
                 <th className="py-3.5 px-4">Item Details</th>
                 <th className="py-3.5 px-4">SKU / Barcode</th>
-                <th className="py-3.5 px-4">Category</th>
+                <th className="py-3.5 px-4">Industry / Cat.</th>
                 <th className="py-3.5 px-4">Price</th>
                 {isAdmin && <th className="py-3.5 px-4">Cost Price</th>}
                 {isAdmin && <th className="py-3.5 px-4">Margin</th>}
@@ -414,23 +482,23 @@ const InventoryPage = () => {
                         <div className="flex items-center justify-center gap-2 flex-wrap">
                           <button
                             type="button"
-                            onClick={handleSeedDummyProducts}
-                            disabled={seedingDemo}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5 disabled:opacity-50"
-                          >
-                            <Zap className="w-4 h-4" />
-                            <span>{seedingDemo ? 'Loading...' : '⚡ Load Demo Products'}</span>
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => {
                               setEditingProduct(null);
                               setIsModalOpen(true);
                             }}
-                            className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5"
+                            className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 inline-flex items-center space-x-1.5"
                           >
                             <Plus className="w-4 h-4" />
-                            <span>Add Product</span>
+                            <span>+ Add First Product</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSeedDummyProducts}
+                            disabled={seedingDemo}
+                            className="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-sm transition active:scale-95 inline-flex items-center space-x-1.5 disabled:opacity-50"
+                          >
+                            <Zap className="w-4 h-4 text-emerald-600" />
+                            <span>{seedingDemo ? 'Loading...' : '⚡ Load Demo Products'}</span>
                           </button>
                         </div>
                       )}
@@ -440,10 +508,15 @@ const InventoryPage = () => {
               ) : (
                 safeProducts.map((item) => {
                   if (!item) return null;
-                  const price = Number(item.price || 0);
+                  const prodTitle = item.name || item.title || 'Untitled Item';
+                  const prodBarcode = item.barcode || item.sku || 'N/A';
+                  const price = Number(item.salePrice !== undefined ? item.salePrice : item.price || 0);
                   const costPrice = Number(item.costPrice || 0);
+                  const stock = item.stock !== undefined ? item.stock : item.stockQuantity;
+                  const minAlert = item.minStockAlert !== undefined ? item.minStockAlert : item.lowStockAlert;
                   const profit = price - costPrice;
                   const marginPct = price > 0 ? ((profit / price) * 100).toFixed(0) : 0;
+                  const indBadge = getIndustryBadge(item.businessType);
 
                   return (
                     <tr
@@ -452,8 +525,13 @@ const InventoryPage = () => {
                     >
                       {/* Product Name */}
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 dark:text-white">
-                          {item.title}
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <span>{prodTitle}</span>
+                          {item.variants && item.variants.length > 0 && (
+                            <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                              {item.variants.length} variants
+                            </span>
+                          )}
                         </div>
                         {item.description && (
                           <div className="text-[10px] text-slate-400 truncate max-w-xs">
@@ -465,15 +543,20 @@ const InventoryPage = () => {
                       {/* SKU */}
                       <td className="py-3 px-4">
                         <span className="font-mono font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-700 dark:text-slate-300">
-                          {item.sku}
+                          {prodBarcode}
                         </span>
                       </td>
 
-                      {/* Category */}
+                      {/* Industry & Category */}
                       <td className="py-3 px-4">
-                        <span className="text-slate-600 dark:text-slate-300 font-medium">
-                          {item.category}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${indBadge.cls}`}>
+                            {indBadge.label}
+                          </span>
+                          <span className="text-slate-600 dark:text-slate-300 font-medium text-[11px]">
+                            {item.category}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Price */}
@@ -506,8 +589,8 @@ const InventoryPage = () => {
                       {/* Stock Level Badge */}
                       <td className="py-3 px-4">
                         <StockBadge
-                          stockQuantity={item.stockQuantity}
-                          lowStockAlert={item.lowStockAlert}
+                          stockQuantity={stock}
+                          lowStockAlert={minAlert}
                         />
                       </td>
 
@@ -526,7 +609,7 @@ const InventoryPage = () => {
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDeleteProduct(item._id, item.title)}
+                              onClick={() => handleDeleteProduct(item._id, prodTitle)}
                               className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition"
                               title="Delete Product"
                             >

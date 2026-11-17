@@ -125,25 +125,52 @@ const createOrder = async (req, res, next) => {
 
     const orderNumber = generateOrderNumber();
 
+    const resolveBaseProductId = (item) => {
+      if (item.originalProductId) return item.originalProductId;
+      if (typeof item.product === 'string' && item.product.includes('_')) {
+        return item.product.split('_')[0];
+      }
+      return item.product;
+    };
+
     // 2. IN-MEMORY STORE PATH
     if (global.useMemoryStore) {
       // Stock check & decrement
       for (const item of items) {
-        const prod = memoryStore.products.find((p) => p._id === item.product && p.tenantId === tenantId);
+        const baseId = resolveBaseProductId(item);
+        const prod = memoryStore.products.find(
+          (p) => (p._id || '').toString() === (baseId || '').toString() && p.tenantId === tenantId
+        );
         if (!prod) {
           return res.status(404).json({ success: false, message: `Product "${item.title}" not found in catalog.` });
         }
-        if (prod.stockQuantity < item.quantity) {
+        const availStock = Number(prod.stock !== undefined ? prod.stock : prod.stockQuantity || 0);
+        if (availStock < item.quantity) {
           return res.status(400).json({
             success: false,
-            message: `Insufficient stock for "${prod.title}". Requested: ${item.quantity}, Available: ${prod.stockQuantity}`,
+            message: `Insufficient stock for "${prod.name || prod.title}". Requested: ${item.quantity}, Available: ${availStock}`,
           });
         }
       }
 
       for (const item of items) {
-        const prod = memoryStore.products.find((p) => p._id === item.product);
-        prod.stockQuantity -= item.quantity;
+        const baseId = resolveBaseProductId(item);
+        const prod = memoryStore.products.find(
+          (p) => (p._id || '').toString() === (baseId || '').toString()
+        );
+        if (prod) {
+          prod.stock = Math.max(0, (prod.stock !== undefined ? prod.stock : prod.stockQuantity || 0) - item.quantity);
+          prod.stockQuantity = prod.stock;
+          if (Array.isArray(prod.variants) && item.sku) {
+            const v = prod.variants.find(
+              (varItem) => (varItem.sku || '').toUpperCase() === (item.sku || '').toUpperCase()
+            );
+            if (v) {
+              v.stock = Math.max(0, (v.stock !== undefined ? v.stock : v.stockQuantity || 0) - item.quantity);
+              v.stockQuantity = v.stock;
+            }
+          }
+        }
       }
 
       let previousDebt = 0;
@@ -236,32 +263,65 @@ const createOrder = async (req, res, next) => {
     // 3. MONGODB ATOMIC PATH
     const decrementedProducts = [];
     for (const item of items) {
-      const product = await Product.findOne({ _id: item.product, tenantId });
+      const baseId = resolveBaseProductId(item);
+      const product = await Product.findOne({ _id: baseId, tenantId });
       if (!product) {
         return res.status(404).json({ success: false, message: `Product "${item.title}" not found in your store.` });
       }
-      if (product.stockQuantity < item.quantity) {
+      const availStock = Number(product.stock !== undefined ? product.stock : product.stockQuantity || 0);
+      if (availStock < item.quantity) {
         return res.status(400).json({
           success: false,
-          message: `Insufficient stock for "${product.title}". Requested: ${item.quantity}, Available: ${product.stockQuantity}`,
+          message: `Insufficient stock for "${product.name || product.title}". Requested: ${item.quantity}, Available: ${availStock}`,
         });
       }
     }
 
     for (const item of items) {
-      const updatedProduct = await Product.findOneAndUpdate(
-        { _id: item.product, tenantId, stockQuantity: { $gte: item.quantity } },
-        { $inc: { stockQuantity: -item.quantity } },
-        { new: true }
-      );
+      const baseId = resolveBaseProductId(item);
+      let updatedProduct;
+      // If variant sku matches, atomically decrement variant stock and total stock
+      if (item.sku) {
+        updatedProduct = await Product.findOneAndUpdate(
+          {
+            _id: baseId,
+            tenantId,
+            'variants.sku': item.sku.toUpperCase(),
+            $or: [{ stock: { $gte: item.quantity } }, { stockQuantity: { $gte: item.quantity } }],
+          },
+          {
+            $inc: {
+              'variants.$.stock': -item.quantity,
+              'variants.$.stockQuantity': -item.quantity,
+              stock: -item.quantity,
+              stockQuantity: -item.quantity,
+            },
+          },
+          { new: true }
+        );
+      }
+
+      if (!updatedProduct) {
+        updatedProduct = await Product.findOneAndUpdate(
+          {
+            _id: baseId,
+            tenantId,
+            $or: [{ stock: { $gte: item.quantity } }, { stockQuantity: { $gte: item.quantity } }],
+          },
+          { $inc: { stock: -item.quantity, stockQuantity: -item.quantity } },
+          { new: true }
+        );
+      }
 
       if (!updatedProduct) {
         for (const rolledBack of decrementedProducts) {
-          await Product.findByIdAndUpdate(rolledBack.id, { $inc: { stockQuantity: rolledBack.quantity } });
+          await Product.findByIdAndUpdate(rolledBack.id, {
+            $inc: { stock: rolledBack.quantity, stockQuantity: rolledBack.quantity },
+          });
         }
         return res.status(400).json({ success: false, message: 'Stock update conflict. Please try again.' });
       }
-      decrementedProducts.push({ id: item.product, quantity: item.quantity });
+      decrementedProducts.push({ id: baseId, quantity: item.quantity });
     }
 
     let previousDebt = 0;
@@ -296,7 +356,7 @@ const createOrder = async (req, res, next) => {
         phone: customer.phone || (khataCustomer ? khataCustomer.phone : ''),
       },
       items: items.map((i) => ({
-        product: i.product,
+        product: resolveBaseProductId(i),
         title: i.title,
         sku: i.sku,
         price: Number(i.price),

@@ -11,6 +11,7 @@ const getProducts = async (req, res, next) => {
     const {
       search,
       category,
+      businessType,
       lowStock,
       page = 1,
       limit = 20,
@@ -31,19 +32,12 @@ const getProducts = async (req, res, next) => {
         (p) => p && p.status === 'active' && matchTenant(p)
       );
 
-      // Auto-populate dummy products if store has no inventory yet
-      if (filtered.length === 0 && !search && (!category || category === 'All') && lowStock !== 'true' && tenantId) {
-        const dummy = getDummyProducts(tenantId);
-        dummy.forEach((p) => memoryStore.products.push(p));
-        filtered = memoryStore.products.filter(
-          (p) => p && p.status === 'active' && matchTenant(p)
-        );
-      }
-
       if (search && search.trim() !== '') {
         const q = search.trim().toLowerCase();
         filtered = filtered.filter(
-          (p) => (p.title || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
+          (p) =>
+            (p.name || p.title || '').toLowerCase().includes(q) ||
+            (p.barcode || p.sku || '').toLowerCase().includes(q)
         );
       }
 
@@ -51,9 +45,17 @@ const getProducts = async (req, res, next) => {
         filtered = filtered.filter((p) => p.category === category);
       }
 
+      if (businessType && businessType !== 'All') {
+        filtered = filtered.filter(
+          (p) => (p.businessType || 'GENERAL_STORE').toUpperCase() === businessType.toUpperCase()
+        );
+      }
+
       if (lowStock === 'true') {
         filtered = filtered.filter(
-          (p) => Number(p.stockQuantity || 0) <= Number(p.lowStockAlert || p.lowStockThreshold || 5)
+          (p) =>
+            Number(p.stock !== undefined ? p.stock : p.stockQuantity || 0) <=
+            Number(p.minStockAlert !== undefined ? p.minStockAlert : (p.lowStockAlert || 5))
         );
       }
 
@@ -83,17 +85,30 @@ const getProducts = async (req, res, next) => {
     const query = { status: 'active', tenantId };
     if (search && search.trim() !== '') {
       const searchRegex = new RegExp(search.trim(), 'i');
-      query.$or = [{ title: searchRegex }, { sku: searchRegex }];
+      query.$or = [
+        { name: searchRegex },
+        { title: searchRegex },
+        { barcode: searchRegex },
+        { sku: searchRegex },
+      ];
     }
     if (category && category !== 'All') {
       query.category = category;
     }
+    if (businessType && businessType !== 'All') {
+      query.businessType = businessType.toUpperCase();
+    }
     if (lowStock === 'true') {
-      query.$expr = { $lte: ['$stockQuantity', '$lowStockAlert'] };
+      query.$expr = {
+        $lte: [
+          { $ifNull: ['$stock', '$stockQuantity'] },
+          { $ifNull: ['$minStockAlert', '$lowStockAlert'] },
+        ],
+      };
     }
 
     if (all === 'true') {
-      const products = await Product.find(query).sort({ title: 1 });
+      const products = await Product.find(query).sort({ name: 1, title: 1 });
       return res.status(200).json({
         success: true,
         count: (products || []).length,
@@ -105,24 +120,9 @@ const getProducts = async (req, res, next) => {
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
 
-    let total = await Product.countDocuments(query);
-
-    // Auto-populate dummy products for newly created store if no inventory exists yet
-    if (total === 0 && !search && (!category || category === 'All') && lowStock !== 'true' && tenantId) {
-      try {
-        const dummy = getDummyProducts(tenantId).map((p) => {
-          const { _id, ...rest } = p;
-          return rest;
-        });
-        await Product.insertMany(dummy);
-        total = await Product.countDocuments(query);
-      } catch (e) {
-        console.warn('Auto-seed dummy products info:', e.message);
-      }
-    }
-
+    const total = await Product.countDocuments(query);
     const products = await Product.find(query)
-      .sort({ title: 1 })
+      .sort({ name: 1, title: 1 })
       .skip(skip)
       .limit(limitNum);
 
@@ -200,13 +200,19 @@ const getProductBySku = async (req, res, next) => {
 const createProduct = async (req, res, next) => {
   try {
     const {
+      name,
       title,
+      barcode,
       sku,
       category,
+      salePrice,
       price,
       costPrice,
+      stock,
       stockQuantity,
+      minStockAlert,
       lowStockAlert,
+      businessType = 'GENERAL_STORE',
       description,
       unitType = 'piece',
       allowFractional = false,
@@ -253,27 +259,77 @@ const createProduct = async (req, res, next) => {
       });
     }
 
-    let variants = [];
+    const finalName = (name || title || '').trim();
+    if (!finalName) {
+      return res.status(400).json({ success: false, message: 'Product name is required.' });
+    }
+
+    const finalBarcode = (barcode || sku || ('SKU-' + Date.now())).trim().toUpperCase();
+    const effectivePrice = Number(
+      salePrice !== undefined && salePrice !== ''
+        ? salePrice
+        : price !== undefined && price !== ''
+        ? price
+        : req.body.sellingPrice || 0
+    );
+    const effectiveCost = Number(costPrice) || 0;
+    const effectiveStock = Number(
+      stock !== undefined && stock !== ''
+        ? stock
+        : stockQuantity !== undefined && stockQuantity !== ''
+        ? stockQuantity
+        : 0
+    );
+    const effectiveMinAlert = Number(
+      minStockAlert !== undefined && minStockAlert !== ''
+        ? minStockAlert
+        : lowStockAlert !== undefined && lowStockAlert !== ''
+        ? lowStockAlert
+        : 5
+    );
+
+    const allowedTypes = ['FOOTWEAR', 'GARMENTS', 'GENERAL_STORE', 'PERFUME'];
+    const finalBusinessType = allowedTypes.includes((businessType || '').toUpperCase())
+      ? businessType.toUpperCase()
+      : 'GENERAL_STORE';
+
+    let rawVariants = [];
     if (req.body.variants) {
       try {
-        variants = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
-        if (!Array.isArray(variants)) variants = [];
+        rawVariants = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
+        if (!Array.isArray(rawVariants)) rawVariants = [];
       } catch (e) {
-        variants = [];
+        rawVariants = [];
       }
     }
 
-    const effectivePrice = Number(price !== undefined && price !== '' ? price : req.body.sellingPrice);
+    const normalizedVariants = rawVariants.map((v, idx) => ({
+      size: (v.size || '').toString().trim(),
+      color: (v.color || '').toString().trim(),
+      sku: (v.sku || `${finalBarcode}-V${idx + 1}`).toString().trim().toUpperCase(),
+      stock: Number(v.stock !== undefined ? v.stock : (v.stockQuantity !== undefined ? v.stockQuantity : 0)),
+      stockQuantity: Number(v.stock !== undefined ? v.stock : (v.stockQuantity !== undefined ? v.stockQuantity : 0)),
+      price: Number(v.price !== undefined ? v.price : (v.salePrice !== undefined ? v.salePrice : effectivePrice)),
+      costPrice: Number(v.costPrice !== undefined ? v.costPrice : effectiveCost),
+    }));
+
+    // If variants have stock and total stock wasn't specified, calculate sum
+    const totalVariantStock = normalizedVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    const finalStockCount = normalizedVariants.length > 0 && effectiveStock === 0 ? totalVariantStock : effectiveStock;
+
     const fallbackImg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop';
 
     if (global.useMemoryStore) {
       const exists = memoryStore.products.find(
-        (p) => p && p.sku === (sku || '').toUpperCase() && (p.tenantId || '').toString() === (tenantId || '').toString()
+        (p) =>
+          p &&
+          ((p.barcode || p.sku || '').toUpperCase() === finalBarcode) &&
+          (p.tenantId || '').toString() === (tenantId || '').toString()
       );
       if (exists) {
         return res.status(400).json({
           success: false,
-          message: `A product with SKU/Barcode "${sku}" already exists in your store.`,
+          message: `A product with SKU/Barcode "${finalBarcode}" already exists in your store.`,
         });
       }
       const isFractional = isFractionalRequested;
@@ -285,20 +341,26 @@ const createProduct = async (req, res, next) => {
       const newProduct = {
         _id: `prod_${Date.now()}`,
         tenantId,
-        title,
-        sku: (sku || '').toUpperCase(),
+        name: finalName,
+        title: finalName,
+        barcode: finalBarcode,
+        sku: finalBarcode,
         category: category || 'General Retail',
+        costPrice: effectiveCost,
+        salePrice: effectivePrice,
         price: effectivePrice,
-        costPrice: Number(costPrice) || 0,
-        stockQuantity: Number(stockQuantity) || 0,
-        lowStockAlert: Number(lowStockAlert) || 5,
+        stock: finalStockCount,
+        stockQuantity: finalStockCount,
+        minStockAlert: effectiveMinAlert,
+        lowStockAlert: effectiveMinAlert,
+        businessType: finalBusinessType,
         unitType: unitType || 'piece',
         allowFractional: isFractional,
         cartonSize: Number(cartonSize) || 1,
         cartonPrice: Number(cartonPrice) || 0,
         image: imagePath || fallbackImg,
         description: description || '',
-        variants: variants || [],
+        variants: normalizedVariants,
         status: 'active',
         createdAt: new Date(),
       };
@@ -306,11 +368,14 @@ const createProduct = async (req, res, next) => {
       return res.status(201).json({ success: true, message: 'Product created successfully', product: newProduct });
     }
 
-    const existingProduct = await Product.findOne({ sku: (sku || '').toUpperCase(), tenantId });
+    const existingProduct = await Product.findOne({
+      $or: [{ barcode: finalBarcode }, { sku: finalBarcode }],
+      tenantId,
+    });
     if (existingProduct) {
       return res.status(400).json({
         success: false,
-        message: `A product with SKU/Barcode "${sku}" already exists in your store.`,
+        message: `A product with SKU/Barcode "${finalBarcode}" already exists in your store.`,
       });
     }
 
@@ -325,20 +390,26 @@ const createProduct = async (req, res, next) => {
     const isFractional = allowFractional === true || allowFractional === 'true' || ['kg', 'gram', 'liter'].includes(unitType);
     const product = await Product.create({
       tenantId,
-      title,
-      sku: (sku || '').toUpperCase(),
+      name: finalName,
+      title: finalName,
+      barcode: finalBarcode,
+      sku: finalBarcode,
       category: category || 'General Retail',
+      costPrice: effectiveCost,
+      salePrice: effectivePrice,
       price: effectivePrice,
-      costPrice: Number(costPrice) || 0,
-      stockQuantity: Number(stockQuantity) || 0,
-      lowStockAlert: Number(lowStockAlert) || 5,
+      stock: finalStockCount,
+      stockQuantity: finalStockCount,
+      minStockAlert: effectiveMinAlert,
+      lowStockAlert: effectiveMinAlert,
+      businessType: finalBusinessType,
       unitType: unitType || 'piece',
       allowFractional: isFractional,
       cartonSize: Number(cartonSize) || 1,
       cartonPrice: Number(cartonPrice) || 0,
       image: imagePath || fallbackImg,
       description: description || '',
-      variants: variants || [],
+      variants: normalizedVariants,
     });
 
     res.status(201).json({ success: true, message: 'Product created successfully', product });
@@ -351,15 +422,31 @@ const updateProduct = async (req, res, next) => {
   try {
     const tenantId = req.user.tenantId;
 
-    let variants = undefined;
+    let normalizedVariants = undefined;
     if (req.body.variants !== undefined) {
       try {
-        variants = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
-        if (!Array.isArray(variants)) variants = [];
+        const raw = typeof req.body.variants === 'string' ? JSON.parse(req.body.variants) : req.body.variants;
+        if (Array.isArray(raw)) {
+          normalizedVariants = raw.map((v, idx) => ({
+            size: (v.size || '').toString().trim(),
+            color: (v.color || '').toString().trim(),
+            sku: (v.sku || `V${idx + 1}`).toString().trim().toUpperCase(),
+            stock: Number(v.stock !== undefined ? v.stock : (v.stockQuantity !== undefined ? v.stockQuantity : 0)),
+            stockQuantity: Number(v.stock !== undefined ? v.stock : (v.stockQuantity !== undefined ? v.stockQuantity : 0)),
+            price: Number(v.price !== undefined ? v.price : (v.salePrice !== undefined ? v.salePrice : 0)),
+            costPrice: Number(v.costPrice !== undefined ? v.costPrice : 0),
+          }));
+        }
       } catch (e) {
-        variants = [];
+        normalizedVariants = [];
       }
     }
+
+    const nameVal = req.body.name || req.body.title;
+    const barcodeVal = req.body.barcode || req.body.sku;
+    const priceVal = req.body.salePrice !== undefined ? req.body.salePrice : req.body.price;
+    const stockVal = req.body.stock !== undefined ? req.body.stock : req.body.stockQuantity;
+    const alertVal = req.body.minStockAlert !== undefined ? req.body.minStockAlert : req.body.lowStockAlert;
 
     if (global.useMemoryStore) {
       const index = memoryStore.products.findIndex((p) => p._id === req.params.id && p.tenantId === tenantId);
@@ -370,13 +457,19 @@ const updateProduct = async (req, res, next) => {
       const updated = {
         ...existing,
         ...req.body,
-        price: req.body.price !== undefined ? Number(req.body.price) : existing.price,
+        name: nameVal || existing.name || existing.title,
+        title: nameVal || existing.title || existing.name,
+        barcode: barcodeVal ? barcodeVal.toUpperCase() : existing.barcode || existing.sku,
+        sku: barcodeVal ? barcodeVal.toUpperCase() : existing.sku || existing.barcode,
+        salePrice: priceVal !== undefined ? Number(priceVal) : existing.salePrice || existing.price,
+        price: priceVal !== undefined ? Number(priceVal) : existing.price || existing.salePrice,
         costPrice: req.body.costPrice !== undefined ? Number(req.body.costPrice) : existing.costPrice,
-        stockQuantity:
-          req.body.stockQuantity !== undefined ? Number(req.body.stockQuantity) : existing.stockQuantity,
-        lowStockAlert:
-          req.body.lowStockAlert !== undefined ? Number(req.body.lowStockAlert) : existing.lowStockAlert,
-        variants: variants !== undefined ? variants : existing.variants || [],
+        stock: stockVal !== undefined ? Number(stockVal) : existing.stock !== undefined ? existing.stock : existing.stockQuantity,
+        stockQuantity: stockVal !== undefined ? Number(stockVal) : existing.stockQuantity !== undefined ? existing.stockQuantity : existing.stock,
+        minStockAlert: alertVal !== undefined ? Number(alertVal) : existing.minStockAlert || existing.lowStockAlert,
+        lowStockAlert: alertVal !== undefined ? Number(alertVal) : existing.lowStockAlert || existing.minStockAlert,
+        businessType: req.body.businessType ? req.body.businessType.toUpperCase() : existing.businessType || 'GENERAL_STORE',
+        variants: normalizedVariants !== undefined ? normalizedVariants : existing.variants || [],
         image: existing.image,
       };
       if (req.file) {
@@ -395,11 +488,31 @@ const updateProduct = async (req, res, next) => {
     }
 
     const updateData = { ...req.body };
-    if (updateData.price) updateData.price = Number(updateData.price);
+    if (nameVal) {
+      updateData.name = nameVal;
+      updateData.title = nameVal;
+    }
+    if (barcodeVal) {
+      updateData.barcode = barcodeVal.toUpperCase();
+      updateData.sku = barcodeVal.toUpperCase();
+    }
+    if (priceVal !== undefined) {
+      updateData.salePrice = Number(priceVal);
+      updateData.price = Number(priceVal);
+    }
     if (updateData.costPrice !== undefined) updateData.costPrice = Number(updateData.costPrice);
-    if (updateData.stockQuantity !== undefined) updateData.stockQuantity = Number(updateData.stockQuantity);
-    if (updateData.lowStockAlert !== undefined) updateData.lowStockAlert = Number(updateData.lowStockAlert);
-    if (variants !== undefined) updateData.variants = variants;
+    if (stockVal !== undefined) {
+      updateData.stock = Number(stockVal);
+      updateData.stockQuantity = Number(stockVal);
+    }
+    if (alertVal !== undefined) {
+      updateData.minStockAlert = Number(alertVal);
+      updateData.lowStockAlert = Number(alertVal);
+    }
+    if (updateData.businessType) {
+      updateData.businessType = updateData.businessType.toUpperCase();
+    }
+    if (normalizedVariants !== undefined) updateData.variants = normalizedVariants;
 
     if (req.file) {
       const uploaded = await uploadToCloud(req.file.buffer, req.file.originalname, req.file.mimetype, 'products');
