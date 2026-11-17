@@ -880,8 +880,11 @@ export const productService = {
           ? { 'Content-Type': 'multipart/form-data' }
           : { 'Content-Type': 'application/json' },
       });
-    } catch {
-      // Handle FormData or JSON payload
+    } catch (err) {
+      if (err.response) {
+        throw err;
+      }
+      // Handle FormData or JSON payload when offline
       const isFormData = typeof FormData !== 'undefined' && formData instanceof FormData;
       const title = isFormData ? formData.get('title') : formData?.title;
       const sku = isFormData ? formData.get('sku') : formData?.sku;

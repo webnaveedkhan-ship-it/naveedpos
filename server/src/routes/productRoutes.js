@@ -30,18 +30,18 @@ router.get('/categories', getCategories);
 router.get('/sku/:sku', getProductBySku);
 
 // Quick Inline Restock
-router.patch('/:id/restock', authorize('STORE_ADMIN'), quickRestock);
+router.patch('/:id/restock', authorize('STORE_OWNER', 'STORE_ADMIN', 'ADMIN', 'CASHIER'), quickRestock);
 
 // Products CRUD
 router
   .route('/')
   .get(getProducts)
-  .post(authorize('STORE_ADMIN'), upload.single('image'), createProduct);
+  .post(authorize('STORE_OWNER', 'STORE_ADMIN', 'ADMIN', 'CASHIER'), upload.single('image'), createProduct);
 
 router
   .route('/:id')
   .get(getProductById)
-  .put(authorize('STORE_ADMIN'), upload.single('image'), updateProduct)
-  .delete(authorize('STORE_ADMIN'), deleteProduct);
+  .put(authorize('STORE_OWNER', 'STORE_ADMIN', 'ADMIN', 'CASHIER'), upload.single('image'), updateProduct)
+  .delete(authorize('STORE_OWNER', 'STORE_ADMIN', 'ADMIN'), deleteProduct);
 
 module.exports = router;

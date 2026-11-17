@@ -2,23 +2,26 @@ import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import ProductImageUploader from '../common/ProductImageUploader';
 import { productService } from '../../services/api';
-import { PlusCircle, AlertCircle, Sparkles } from 'lucide-react';
+import { PlusCircle, AlertCircle, Sparkles, Check, Package } from 'lucide-react';
 
 const CATEGORY_PRESETS = [
-  'Beverages',
-  'Snacks & Bakery',
-  'Dairy & Fresh',
+  'General Retail',
   'Groceries & Pantry',
+  'Beverages',
+  'Snacks & Confectionery',
+  'Dairy & Fresh',
+  'Garments & Apparel',
+  'Footwear',
   'Personal Care',
   'Electronics & Acc.',
-  'General Retail',
+  'Household & Cleaning',
 ];
 
 const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     sku: '',
-    category: 'Groceries & Pantry',
+    category: 'General Retail',
     price: '',
     costPrice: '',
     stockQuantity: '20',
@@ -35,19 +38,22 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleGenerateSku = () => {
-    const prefix = (formData.category || 'ITM').slice(0, 3).toUpperCase();
-    const random = Math.floor(100 + Math.random() * 900);
+    const cleanPrefix = (formData.category || 'ITM')
+      .replace(/[^a-zA-Z]/g, '')
+      .slice(0, 3)
+      .toUpperCase() || 'ITM';
+    const rand = Math.floor(1000 + Math.random() * 9000);
     setFormData((prev) => ({
       ...prev,
-      sku: `${prefix}-${random}`,
+      sku: `${cleanPrefix}-${rand}`,
     }));
   };
 
@@ -55,8 +61,20 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!formData.title || !formData.sku || !formData.price) {
-      setErrorMsg('Product title, SKU/Barcode, and selling price are required.');
+    const title = (formData.title || '').trim();
+    const sku = (formData.sku || '').trim().toUpperCase();
+    const priceNum = parseFloat(formData.price);
+
+    if (!title) {
+      setErrorMsg('Product title is required.');
+      return;
+    }
+    if (!sku) {
+      setErrorMsg('SKU / Barcode is required.');
+      return;
+    }
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setErrorMsg('Please enter a valid selling price greater than 0.');
       return;
     }
 
@@ -64,44 +82,55 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
 
     try {
       const payload = {
-        title: formData.title.trim(),
-        sku: formData.sku.trim().toUpperCase(),
-        category: formData.category.trim(),
-        price: Number(formData.price),
-        sellingPrice: Number(formData.price),
-        costPrice: Number(formData.costPrice || 0),
-        stockQuantity: Number(formData.stockQuantity || 0),
-        lowStockAlert: Number(formData.lowStockAlert || 5),
-        lowStockThreshold: Number(formData.lowStockAlert || 5),
+        title,
+        sku,
+        category: (formData.category || 'General Retail').trim(),
+        price: priceNum,
+        sellingPrice: priceNum,
+        costPrice: parseFloat(formData.costPrice) || 0,
+        stockQuantity: parseFloat(formData.stockQuantity) || 0,
+        lowStockAlert: parseFloat(formData.lowStockAlert) || 5,
+        lowStockThreshold: parseFloat(formData.lowStockAlert) || 5,
         unitType: formData.unitType || 'piece',
         allowFractional: Boolean(formData.allowFractional),
-        cartonSize: Number(formData.cartonSize) || 1,
-        cartonPrice: Number(formData.cartonPrice) || 0,
+        cartonSize: parseInt(formData.cartonSize, 10) || 1,
+        cartonPrice: parseFloat(formData.cartonPrice) || 0,
         image:
-          formData.image.trim() ||
+          (formData.image || '').trim() ||
           'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop',
-        description: formData.description.trim(),
+        description: (formData.description || '').trim(),
       };
 
       const res = await productService.createProduct(payload);
-      if (res.data.success) {
-        onProductCreated(res.data.product);
-        // Reset form
+      if (res.data?.success) {
+        if (onProductCreated) {
+          onProductCreated(res.data.product);
+        }
+        // Reset form to defaults
         setFormData({
           title: '',
           sku: '',
-          category: 'Groceries & Pantry',
+          category: 'General Retail',
           price: '',
           costPrice: '',
           stockQuantity: '20',
           lowStockAlert: '5',
+          unitType: 'piece',
+          allowFractional: false,
+          cartonSize: '1',
+          cartonPrice: '',
           image: '',
           description: '',
         });
         onClose();
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || 'Failed to add product. Please verify fields.');
+      console.error('Quick Add Product failed:', err);
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to add product. Please verify fields.';
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -112,24 +141,21 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="Quick Add Product to POS"
+      subtitle="Create a new catalog item directly from counter without losing active cart"
       maxWidth="max-w-lg"
     >
       <form onSubmit={handleSubmit} className="space-y-3.5">
-        <p className="text-xs text-slate-500">
-          Create a new catalog item directly from counter without losing active customer cart.
-        </p>
-
         {errorMsg && (
-          <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl flex items-center text-xs text-red-700 dark:text-red-300">
-            <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+          <div className="p-3 bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-900 rounded-xl flex items-center text-xs text-red-700 dark:text-red-300 font-semibold animate-fadeIn">
+            <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0 text-red-600" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Product Title */}
         <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-            Product Title *
+          <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+            Product Title (پروڈکٹ کا نام) *
           </label>
           <input
             type="text"
@@ -137,8 +163,8 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
             required
             value={formData.title}
             onChange={handleChange}
-            placeholder="e.g. Tapal Danedar Tea 430g"
-            className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"
+            placeholder="e.g. Tapal Danedar Tea 430g / Men Shalwar Kameez"
+            className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 font-medium"
           />
         </div>
 
@@ -146,15 +172,15 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="text-xs font-bold text-slate-800 dark:text-slate-100">
                 Barcode / SKU *
               </label>
               <button
                 type="button"
                 onClick={handleGenerateSku}
-                className="text-[10px] font-bold text-brand-600 hover:text-brand-700 flex items-center gap-0.5"
+                className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 flex items-center gap-0.5 active:scale-95 transition"
               >
-                <Sparkles className="w-2.5 h-2.5" />
+                <Sparkles className="w-3 h-3" />
                 Auto-generate
               </button>
             </div>
@@ -164,20 +190,20 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               required
               value={formData.sku}
               onChange={handleChange}
-              placeholder="e.g. TEA-003 or 8964000..."
-              className="w-full px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white uppercase"
+              placeholder="e.g. GRO-1029 or 8964000..."
+              className="w-full px-3 py-2 text-xs font-mono bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white uppercase font-bold"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Category *
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Category (کیٹیگری) *
             </label>
             <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
             >
               {CATEGORY_PRESETS.map((cat) => (
                 <option key={cat} value={cat}>
@@ -191,8 +217,8 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
         {/* Prices: Selling Price & Cost Price */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Selling Price (Rs.) *
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Selling Price Rs. (فروخت قیمت) *
             </label>
             <input
               type="number"
@@ -203,13 +229,13 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               value={formData.price}
               onChange={handleChange}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-xs font-bold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-brand-600 dark:text-brand-400"
+              className="w-full px-3 py-2 text-xs font-extrabold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-600 dark:text-emerald-400 placeholder-slate-400"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Cost Price (Rs.)
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Cost Price Rs. (خرید قیمت)
             </label>
             <input
               type="number"
@@ -219,7 +245,7 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               value={formData.costPrice}
               onChange={handleChange}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 font-medium"
             />
           </div>
         </div>
@@ -227,8 +253,8 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
         {/* Stock Quantity & Low Stock Limit */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Opening Stock Quantity *
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Opening Stock (موجود اسٹاک) *
             </label>
             <input
               type="number"
@@ -237,13 +263,13 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               min="0"
               value={formData.stockQuantity}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Low Stock Alert Limit
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">
+              Low Stock Warning (کم اسٹاک الرٹ)
             </label>
             <input
               type="number"
@@ -251,36 +277,36 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               min="0"
               value={formData.lowStockAlert}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none text-slate-900 dark:text-white"
+              className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white font-medium"
             />
           </div>
         </div>
 
-        {/* Multi-Unit & Loose Weight Controls */}
-        <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+        {/* Unit Type & Fractional Controls */}
+        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Unit Type
+                Unit Type (پیمائش کی اکائی)
               </label>
               <select
                 name="unitType"
                 value={formData.unitType}
                 onChange={handleChange}
-                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none"
+                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none text-slate-900 dark:text-white"
               >
-                <option value="piece">Piece (Pcs)</option>
-                <option value="kg">Kilogram (Kg)</option>
-                <option value="gram">Gram (g)</option>
-                <option value="liter">Litre (Ltr)</option>
-                <option value="dozen">Dozen</option>
-                <option value="carton">Carton / Pack</option>
+                <option value="piece">Piece / Pcs (عدد)</option>
+                <option value="kg">Kilogram / Kg (کلو)</option>
+                <option value="gram">Gram / g (گرام)</option>
+                <option value="liter">Litre / Ltr (لیٹر)</option>
+                <option value="dozen">Dozen (درجن)</option>
+                <option value="carton">Carton / Pack (کاٹن / پیک)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Carton Price (Optional)
+                Carton Price (ہول سیل ریٹ)
               </label>
               <input
                 type="number"
@@ -289,8 +315,8 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
                 name="cartonPrice"
                 value={formData.cartonPrice}
                 onChange={handleChange}
-                placeholder="Rs. Wholesale"
-                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none font-bold text-indigo-600"
+                placeholder="Optional"
+                className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg outline-none font-bold text-indigo-600 dark:text-indigo-400"
               />
             </div>
           </div>
@@ -300,21 +326,21 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
               type="checkbox"
               name="allowFractional"
               checked={formData.allowFractional}
-              onChange={(e) => setFormData({ ...formData, allowFractional: e.target.checked })}
-              className="w-3.5 h-3.5 text-brand-600 rounded"
+              onChange={handleChange}
+              className="w-3.5 h-3.5 text-emerald-600 rounded"
             />
-            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
-              Allow Fractional / Loose Weight Stepping (e.g. 0.25kg, 0.5kg)
+            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+              Allow Fractional / Loose Weight Stepping (0.25kg, 0.5kg کھلی اشیاء)
             </span>
           </label>
         </div>
 
-        {/* Product Image Uploader with Computer File Picker & Preview */}
+        {/* Product Photo Uploader */}
         <div>
           <ProductImageUploader
             value={formData.image}
             onChange={(val) => setFormData((prev) => ({ ...prev, image: val }))}
-            label="Product Photo (Local Upload or Default)"
+            label="Product Photo (Optional)"
           />
         </div>
 
@@ -323,17 +349,23 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+            className="px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md transition disabled:opacity-50 flex items-center space-x-1.5"
+            className="px-5 py-2.5 text-xs font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-md transition disabled:opacity-50 flex items-center space-x-1.5 active:scale-95"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>{loading ? 'Adding...' : 'Add to Catalog & Cart'}</span>
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <PlusCircle className="w-4 h-4" />
+                <span>Save &amp; Add to Catalog</span>
+              </>
+            )}
           </button>
         </div>
       </form>

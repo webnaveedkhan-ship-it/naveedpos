@@ -31,28 +31,28 @@ const Modal = ({ isOpen, onClose, title, subtitle, children, maxWidth = 'max-w-m
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/75 dark:bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
     >
       <div
-        className={`w-full ${maxWidth} bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/80 border-t sm:border border-slate-800 text-slate-100 overflow-hidden transform transition-all flex flex-col max-h-[92vh] sm:max-h-[90vh] pb-[env(safe-area-inset-bottom,0.5rem)] sm:pb-0`}
+        className={`w-full ${maxWidth} bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 overflow-hidden transform transition-all flex flex-col max-h-[92vh] sm:max-h-[90vh] pb-[env(safe-area-inset-bottom,0.5rem)] sm:pb-0`}
       >
         {/* Mobile Pull/Drag handle pill */}
         <div
           onClick={onClose}
           className="w-full pt-2.5 pb-1 flex justify-center sm:hidden cursor-grab active:cursor-grabbing select-none"
         >
-          <div className="w-12 h-1.5 bg-slate-700 rounded-full" />
+          <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-800 bg-slate-950/60">
+        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-950/60">
           <div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-2 sm:p-1.5 rounded-xl sm:rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition min-tap flex items-center justify-center"
+            className="p-2 sm:p-1.5 rounded-xl sm:rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition min-tap flex items-center justify-center"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -60,7 +60,7 @@ const Modal = ({ isOpen, onClose, title, subtitle, children, maxWidth = 'max-w-m
         </div>
 
         {/* Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto text-slate-200">{children}</div>
+        <div className="p-5 sm:p-6 overflow-y-auto text-slate-800 dark:text-slate-200">{children}</div>
       </div>
     </div>
   );

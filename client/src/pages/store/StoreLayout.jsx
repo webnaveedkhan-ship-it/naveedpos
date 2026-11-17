@@ -315,35 +315,99 @@ const StoreLayout = () => {
           </Link>
         </div>
 
-        {/* Right Actions: Trial Countdown Badge + Fast POS Action + Theme Toggle + User Menu */}
-        <div className="flex items-center space-x-2 sm:space-x-2.5">
-          {/* Subtle 14-Day Free Trial Countdown Badge */}
-          {isTrial && (
-            <Link
-              to="/billing"
-              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold transition flex items-center space-x-1.5 min-h-[40px] active:scale-95"
-              title="14-Day Free Trial Active. Click to Upgrade Plan"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span className="hidden sm:inline">14-Day Trial:</span>
-              <span className="font-black text-amber-600 dark:text-amber-400">{remainingDays}d left</span>
-            </Link>
-          )}
-
-          {/* Quick Counter POS Action Button */}
+        {/* Center: Instant Shortcuts in the Software Header */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* 1. [+ POS Counter / Sale] */}
           <NavLink
             to="/pos"
-            className="flex items-center space-x-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-md shadow-emerald-600/20 active:scale-95 transition-all min-h-[40px]"
+            className={({ isActive }) =>
+              `min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center space-x-1.5 active:scale-95 shadow-xs ${
+                isActive
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/30'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800'
+              }`
+            }
             title="Open POS Terminal (F2)"
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="hidden sm:inline">POS Counter</span>
+            <ShoppingCart className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">+ New Sale</span>
+            <span className="sm:hidden">POS</span>
             {totalItemCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-white text-emerald-700 text-[10px] font-black">
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black">
                 {totalItemCount}
               </span>
             )}
           </NavLink>
+
+          {/* 2. [+ Add Product] */}
+          <button
+            type="button"
+            onClick={() => {
+              if (location.pathname.startsWith('/inventory') || location.pathname.startsWith('/products')) {
+                window.dispatchEvent(new CustomEvent('open-add-product'));
+              } else if (location.pathname.startsWith('/pos')) {
+                window.dispatchEvent(new CustomEvent('open-add-product'));
+              } else {
+                navigate('/inventory?action=add');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-product')), 60);
+              }
+            }}
+            className="min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 active:scale-95 transition-all flex items-center space-x-1.5"
+            title="Add New Product to Inventory Catalog"
+          >
+            <Package className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span className="hidden sm:inline">+ Add Product</span>
+            <span className="sm:hidden">+ Item</span>
+          </button>
+
+          {/* 3. [+ Add Khata Customer] */}
+          <button
+            type="button"
+            onClick={() => {
+              if (location.pathname.startsWith('/khata')) {
+                window.dispatchEvent(new CustomEvent('open-add-customer'));
+              } else {
+                navigate('/khata?action=add');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('open-add-customer')), 60);
+              }
+            }}
+            className="hidden sm:flex min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/80 active:scale-95 transition-all items-center space-x-1.5"
+            title="Register New Customer in Khata Ledger"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>+ Khata</span>
+          </button>
+
+          {/* 4. [📊 Sales History] */}
+          <NavLink
+            to="/sales"
+            className={({ isActive }) =>
+              `hidden md:flex min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all items-center space-x-1.5 active:scale-95 ${
+                isActive
+                  ? 'bg-purple-600 text-white shadow-purple-600/30'
+                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+              }`
+            }
+            title="View Sales Invoices & Hisaab History"
+          >
+            <Receipt className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+            <span>📊 Sales</span>
+          </NavLink>
+        </div>
+
+        {/* Right Actions: Trial Countdown Badge + Theme Toggle + User Menu */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
+          {/* Subtle 14-Day Free Trial Countdown Badge */}
+          {isTrial && (
+            <Link
+              to="/billing"
+              className="hidden lg:flex px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold transition items-center space-x-1.5 min-h-[38px] active:scale-95"
+              title="14-Day Free Trial Active. Click to Upgrade Plan"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span>{remainingDays}d trial</span>
+            </Link>
+          )}
 
           {/* Theme Toggle (Light / Dark Mode) */}
           <ThemeToggle />
@@ -354,7 +418,7 @@ const StoreLayout = () => {
               logout();
               navigate('/login', { replace: true });
             }}
-            className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center space-x-1.5 active:scale-95 min-h-[40px]"
+            className="p-2 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-900/40 transition flex items-center space-x-1 active:scale-95 min-h-[38px]"
             title="Sign Out"
           >
             <LogOut className="w-4 h-4" />
