@@ -62,10 +62,26 @@ export const buildWhatsAppReceiptText = (order, storeName = 'NaveedPOS Store') =
     lines.push(`Discount: -Rs ${order.discountAmount?.toLocaleString()}`);
   }
 
-  lines.push(`*GRAND TOTAL: Rs ${order.grandTotal?.toLocaleString()}*`);
-  lines.push(`Payment Method: *${(order.paymentMethod || 'CASH').toUpperCase()}*`);
+  const pMethod = (order.paymentMethod || 'CASH').toUpperCase();
+  let paymentLabel = pMethod;
+  if (pMethod === 'CASH') {
+    paymentLabel = 'Cash (نقد)';
+  } else if (pMethod === 'JAZZCASH_EASYPAISA' || pMethod === 'JAZZCASH' || pMethod === 'EASYPAISA') {
+    const wallet = order.paymentDetails?.walletType || 'Mobile Wallet';
+    const ref = order.paymentDetails?.transactionRef ? ` (TID: ${order.paymentDetails.transactionRef})` : '';
+    paymentLabel = `${wallet} / موبائل والٹ${ref}`;
+  } else if (pMethod === 'BANK' || pMethod === 'BANK_TRANSFER') {
+    const bName = order.paymentDetails?.bankName ? ` - ${order.paymentDetails.bankName}` : '';
+    const ref = order.paymentDetails?.transactionRef ? ` (Ref: ${order.paymentDetails.transactionRef})` : '';
+    paymentLabel = `Bank Transfer${bName}${ref}`;
+  } else if (pMethod === 'KHATA') {
+    paymentLabel = 'Khata / Udhar (کھاتا - ادھار)';
+  }
 
-  if (order.paymentMethod?.toUpperCase() === 'KHATA') {
+  lines.push(`*GRAND TOTAL: Rs ${order.grandTotal?.toLocaleString()}*`);
+  lines.push(`Payment Method: *${paymentLabel}*`);
+
+  if (pMethod === 'KHATA') {
     lines.push(`Udhar Added: Rs ${order.grandTotal?.toLocaleString()}`);
     if (order.paymentDetails?.balanceAfter !== undefined) {
       lines.push(`*Outstanding Khata Balance: Rs ${order.paymentDetails.balanceAfter?.toLocaleString()}*`);

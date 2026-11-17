@@ -228,25 +228,58 @@ const ProductGrid = ({
             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
             <p className="text-sm font-medium">Loading catalog items...</p>
           </div>
+        ) : safeProducts.length === 0 ? (
+          <div className="h-80 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-800 rounded-3xl p-8 max-w-lg mx-auto my-8 text-center bg-slate-900/40 animate-fadeIn">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 text-emerald-400 shadow-sm">
+              <Package className="w-8 h-8 stroke-1" />
+            </div>
+            <h3 className="text-lg font-black text-white">Your Store Catalog is Empty</h3>
+            <p className="text-xs text-slate-400 mt-1 mb-5 max-w-xs leading-relaxed">
+              No products found in this store yet. Add your first item to start billing, or load demo items.
+            </p>
+            <div className="flex items-center gap-3 flex-wrap justify-center">
+              {onOpenQuickAdd && (
+                <button
+                  type="button"
+                  onClick={onOpenQuickAdd}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-600/20 active:scale-95 transition flex items-center space-x-2"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>+ Add First Product</span>
+                </button>
+              )}
+            </div>
+          </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="h-64 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-800 rounded-2xl p-6">
+          <div className="h-64 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-800 rounded-2xl p-6 text-center animate-fadeIn">
             <Package className="w-12 h-12 stroke-1 mb-2 text-slate-600" />
-            <p className="text-base font-semibold text-slate-300">No products found</p>
+            <p className="text-base font-semibold text-slate-300">No matching products found</p>
             <p className="text-xs text-slate-500 mt-1">Try adjusting search or category filter</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                if (onSelectCategory) onSelectCategory('All');
+              }}
+              className="mt-3 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold transition"
+            >
+              Clear Filters
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5">
             {filteredProducts.map((product) => {
+              if (!product) return null;
               const cartItem = cartItems.find((i) => i.product === product._id);
               const inCartQty = cartItem ? cartItem.quantity : 0;
-              const isOutOfStock = Number(product?.stockQuantity || 0) <= 0;
-              const isLowStock =
-                !isOutOfStock &&
-                Number(product?.stockQuantity || 0) <=
-                  Number(product?.lowStockAlert || product?.lowStockThreshold || 5);
-              const remainingStock = Number(product.stockQuantity) - inCartQty;
+              const stockQty = Number(product?.stockQuantity ?? 0);
+              const isOutOfStock = stockQty <= 0;
+              const lowAlert = Number(product?.lowStockAlert ?? product?.lowStockThreshold ?? 5);
+              const isLowStock = !isOutOfStock && stockQty <= lowAlert;
+              const remainingStock = stockQty - inCartQty;
               const imgSrc = product.image || product.imageUrl || DEFAULT_FALLBACK_IMAGE;
               const isJustAdded = addedEffectId === product._id;
+              const price = Number(product?.price ?? product?.sellingPrice ?? 0);
 
               return (
                 <div

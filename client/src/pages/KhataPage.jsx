@@ -132,6 +132,20 @@ const KhataPage = () => {
     fetchKhataData();
   }, [fetchKhataData]);
 
+  // Handle direct navigation shortcuts (?action=add or custom event)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'add' || params.get('add') === 'true') {
+      setIsAddModalOpen(true);
+    }
+
+    const handleOpenAdd = () => {
+      setIsAddModalOpen(true);
+    };
+    window.addEventListener('open-add-customer', handleOpenAdd);
+    return () => window.removeEventListener('open-add-customer', handleOpenAdd);
+  }, []);
+
   const handleCreateCustomer = async (e) => {
     e.preventDefault();
     setAddError('');

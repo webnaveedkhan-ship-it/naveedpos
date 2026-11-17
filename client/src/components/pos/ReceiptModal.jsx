@@ -30,8 +30,18 @@ const ReceiptModal = ({ isOpen, onClose, order }) => {
   };
 
   const storeName = order.tenantName || tenantName || 'NORMEGA MART';
-  const isKhata = order.paymentMethod?.toUpperCase() === 'KHATA';
-  const paymentModeText = order.paymentMethod?.toUpperCase() || 'CASH';
+  const rawMethod = order.paymentMethod?.toUpperCase() || 'CASH';
+  const isKhata = rawMethod === 'KHATA';
+  const paymentModeText =
+    rawMethod === 'CASH'
+      ? 'CASH (نقد)'
+      : rawMethod === 'JAZZCASH_EASYPAISA' || rawMethod === 'JAZZCASH' || rawMethod === 'EASYPAISA'
+      ? `${order.paymentDetails?.walletType || 'MOBILE WALLET'}`
+      : rawMethod === 'BANK' || rawMethod === 'BANK_TRANSFER'
+      ? `${order.paymentDetails?.bankName || 'BANK TRANSFER'}`
+      : rawMethod === 'KHATA'
+      ? 'KHATA / ادھار'
+      : rawMethod;
 
   const defaultPhone = order.customer?.phone || '';
   const effectivePhone = customPhone || defaultPhone;
@@ -162,6 +172,13 @@ const ReceiptModal = ({ isOpen, onClose, order }) => {
               <span>Payment Mode:</span>
               <span>{paymentModeText}</span>
             </div>
+
+            {order.paymentDetails?.transactionRef && (
+              <div className="flex justify-between text-[10px]">
+                <span>Ref / TID:</span>
+                <span className="font-mono font-bold">{order.paymentDetails.transactionRef}</span>
+              </div>
+            )}
 
             {/* Cash Tendered & Change */}
             {order.paymentMethod?.toLowerCase() === 'cash' && order.paymentDetails?.cashTendered > 0 && (

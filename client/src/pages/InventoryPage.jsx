@@ -113,6 +113,22 @@ const InventoryPage = () => {
     fetchCategories();
   }, [fetchCategories]);
 
+  // Handle direct navigation shortcuts (?action=add or custom event)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('action') === 'add' || params.get('add') === 'true') {
+      setEditingProduct(null);
+      setIsModalOpen(true);
+    }
+
+    const handleOpenAdd = () => {
+      setEditingProduct(null);
+      setIsModalOpen(true);
+    };
+    window.addEventListener('open-add-product', handleOpenAdd);
+    return () => window.removeEventListener('open-add-product', handleOpenAdd);
+  }, []);
+
   // Handle Add/Edit Save
   const handleSaveProduct = async (formData, productId) => {
     if (productId) {

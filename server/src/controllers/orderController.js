@@ -38,15 +38,25 @@ const createOrder = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Order must contain at least one item' });
     }
 
-    const normalizedPaymentMethod = paymentMethod.toUpperCase();
+    let normalizedPaymentMethod = (paymentMethod || 'CASH').toString().toUpperCase();
+    if (normalizedPaymentMethod === 'JAZZCASH' || normalizedPaymentMethod === 'EASYPAISA') {
+      normalizedPaymentMethod = 'JAZZCASH_EASYPAISA';
+    } else if (normalizedPaymentMethod === 'BANK_TRANSFER') {
+      normalizedPaymentMethod = 'BANK';
+    }
 
     // 1. Validation for Khata (Udhar) Payment
     let khataCustomer = null;
-    const isKhataSale = normalizedPaymentMethod === 'KHATA' || (normalizedPaymentMethod === 'SPLIT' && (paymentDetails.khataAmount || 0) > 0);
-    const khataAmount = normalizedPaymentMethod === 'KHATA' ? Number(grandTotal) : Number(paymentDetails.khataAmount || 0);
+    const isKhataSale =
+      normalizedPaymentMethod === 'KHATA' ||
+      (normalizedPaymentMethod === 'SPLIT' && (paymentDetails.khataAmount || 0) > 0);
+    const khataAmount =
+      normalizedPaymentMethod === 'KHATA'
+        ? Number(grandTotal)
+        : Number(paymentDetails.khataAmount || 0);
 
     if (isKhataSale) {
-      const khataId = customer.khataId;
+      const khataId = customer.khataId || customer.customerId || customer._id || customer.id;
       const phone = customer.phone?.trim();
 
       if (!khataId && !phone) {

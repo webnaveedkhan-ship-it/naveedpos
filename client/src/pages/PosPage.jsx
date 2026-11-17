@@ -55,6 +55,13 @@ const PosPage = () => {
     fetchCatalog();
   }, [fetchCatalog]);
 
+  // Listen for global open-add-product event
+  useEffect(() => {
+    const handleOpenAdd = () => setIsQuickAddOpen(true);
+    window.addEventListener('open-add-product', handleOpenAdd);
+    return () => window.removeEventListener('open-add-product', handleOpenAdd);
+  }, []);
+
   const handleOrderSuccess = (order) => {
     setCompletedOrder(order);
     setIsReceiptOpen(true);

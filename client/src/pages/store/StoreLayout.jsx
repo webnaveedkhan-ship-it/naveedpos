@@ -6,6 +6,7 @@ import { broadcastService } from '../../services/api';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import MobileBottomNav from '../../components/common/MobileBottomNav';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
+import QuickActionHeaderBar from '../../components/common/QuickActionHeaderBar';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -361,6 +362,9 @@ const StoreLayout = () => {
           </button>
         </div>
       </header>
+
+      {/* Quick Action Navigation Bar */}
+      <QuickActionHeaderBar />
 
       {/* ------------------------------------------------------------- */}
       {/* 2. BODY LAYOUT: DESKTOP SIDEBAR + MAIN CONTENT                */}

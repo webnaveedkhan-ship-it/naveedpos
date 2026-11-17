@@ -122,7 +122,26 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['CASH', 'CARD', 'KHATA', 'SPLIT', 'cash', 'card', 'khata', 'split'],
+      enum: [
+        'CASH',
+        'CARD',
+        'KHATA',
+        'SPLIT',
+        'JAZZCASH',
+        'EASYPAISA',
+        'JAZZCASH_EASYPAISA',
+        'BANK',
+        'BANK_TRANSFER',
+        'cash',
+        'card',
+        'khata',
+        'split',
+        'jazzcash',
+        'easypaisa',
+        'jazzcash_easypaisa',
+        'bank',
+        'bank_transfer',
+      ],
       required: true,
       uppercase: true,
     },
@@ -158,6 +177,18 @@ const orderSchema = new mongoose.Schema(
       balanceAfter: {
         type: Number,
         default: 0,
+      },
+      walletType: {
+        type: String,
+        default: '',
+      },
+      transactionRef: {
+        type: String,
+        default: '',
+      },
+      bankName: {
+        type: String,
+        default: '',
       },
     },
     status: {
