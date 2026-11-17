@@ -26,72 +26,292 @@ import {
   Scale,
 } from 'lucide-react';
 
-const PLANS_DATA = [
-  {
-    id: 'basic',
-    name: 'Basic Plan',
-    tagline: 'Starter for small retail shops',
-    monthlyPrice: 1500,
-    yearlyPrice: 15000,
-    badge: null,
-    borderClass: 'border-slate-200 dark:border-slate-800',
-    headerBg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300',
-    features: [
-      { text: 'Max 300 Products Catalog', included: true },
-      { text: 'Max 50 Customer Khata accounts', included: true },
-      { text: 'Core POS Billing & 80mm Clean Receipts', included: true },
-      { text: 'Daily & Weekly Sales Reports', included: true },
-      { text: 'Manual Khata Ledger entry', included: true },
-      { text: '1-Click WhatsApp Digital Receipts', included: false },
-      { text: 'Printable Barcode Sticker Generator', included: false },
-      { text: 'Day-End Cash Drawer Reconciliation', included: false },
-      { text: 'Loose Weight & Fractional Pricing', included: false },
-      { text: 'Full Store JSON Backup & Export', included: false },
+const MODULE_PLANS_DATA = {
+  FOOTWEAR: {
+    id: 'FOOTWEAR',
+    title: 'Footwear & Shoe Mart Plans',
+    urdu: 'جوتے، سینڈلز اور چپل اسٹور کے لیے خصوصی پیکجز',
+    icon: '👟',
+    plans: [
+      {
+        id: 'footwear_starter',
+        name: 'Footwear Single Outlet',
+        urdu: 'جوتے سنگل شاپ پیکج',
+        tagline: 'Ideal for small shoe shops, chappal stalls & bazaar counters',
+        monthlyPrice: 1800,
+        yearlyPrice: 18000,
+        badge: 'Starter',
+        borderClass: 'border-amber-500/40',
+        headerBg: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200',
+        features: [
+          { text: 'Pakistani Sizes 6 to 11 Matrix Run', included: true },
+          { text: 'Max 600 Shoe Models & Pairs', included: true },
+          { text: 'Single POS Counter Billing & Thermal Slip', included: true },
+          { text: 'Shoe Box Barcode Sticker Generator', included: true },
+          { text: '1-Click WhatsApp Shoe Sale Bill', included: true },
+          { text: 'Broken Size Run Auto-Alerts', included: false },
+          { text: 'Brand Turnover Analytics (Bata/Service)', included: false },
+          { text: 'Multi-Branch Inventory Sync', included: false },
+        ],
+      },
+      {
+        id: 'footwear_pro',
+        name: 'Shoe Mart & Boutique Pro',
+        urdu: 'شو مارٹ اور بوٹیک پرو',
+        tagline: 'High-volume footwear showrooms, malls, and brand retailers',
+        monthlyPrice: 3500,
+        yearlyPrice: 35000,
+        badge: 'Most Popular',
+        popular: true,
+        borderClass: 'border-amber-500 shadow-lg shadow-amber-500/10 ring-2 ring-amber-500/20',
+        headerBg: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
+        features: [
+          { text: 'Pakistani Sizes 6 to 11 Matrix Run', included: true },
+          { text: 'Max 3,000 Shoe Models & Pairs', included: true },
+          { text: 'Broken Size Run Auto-Alerts (Critical 7, 8, 9)', included: true },
+          { text: 'Brand Turnover Analytics (Bata, Service, Peshawari Kheri)', included: true },
+          { text: 'Shoe Box Barcodes + Shoe Exchange / Return Slip', included: true },
+          { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+          { text: 'Customer Khata Udhar Book with WhatsApp Reminders', included: true },
+          { text: 'Multi-Branch Inventory Sync', included: false },
+        ],
+      },
+      {
+        id: 'footwear_enterprise',
+        name: 'Footwear Chain & Factory',
+        urdu: 'جوتے ہول سیل اور فیکٹری چین',
+        tagline: 'Shoe factories, wholesale carton distributors & showroom chains',
+        monthlyPrice: 6200,
+        yearlyPrice: 62000,
+        badge: 'Enterprise',
+        borderClass: 'border-amber-600 shadow-xl shadow-amber-500/20',
+        headerBg: 'bg-amber-600/10 text-amber-600 dark:text-amber-400',
+        features: [
+          { text: 'Unlimited Shoe Models & Pairs', included: true },
+          { text: 'Wholesale Carton-to-Pair Unboxing Multipliers', included: true },
+          { text: 'Broken Size Watchdog with Automatic Reordering', included: true },
+          { text: 'Multi-Counter & Multi-Branch Cloud Sync', included: true },
+          { text: 'Master Factory Khata & Supplier Payables', included: true },
+          { text: 'Full Automated Database Backup & JSON Download', included: true },
+          { text: 'Priority Super Admin VIP Support 24/7', included: true },
+        ],
+      },
     ],
   },
-  {
-    id: 'standard',
-    name: 'Standard Plan',
-    tagline: 'Most popular for growing grocery & marts',
-    monthlyPrice: 3000,
-    yearlyPrice: 30000,
-    badge: 'Most Popular',
-    borderClass: 'border-indigo-500 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/20',
-    headerBg: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300',
-    features: [
-      { text: 'Max 1,500 Products Catalog', included: true },
-      { text: 'Unlimited Customer Khata accounts', included: true },
-      { text: '1-Click WhatsApp Receipts & Reminders', included: true },
-      { text: 'Printable Barcode Sticker Generator', included: true },
-      { text: 'Daily, Weekly & Monthly Profit Reports', included: true },
-      { text: 'Day-End Cash Drawer Reconciliation (حساب)', included: true },
-      { text: 'Supplier Invoices & Wholesale Purchases', included: true },
-      { text: 'Daily Store Expenses Manager', included: true },
-      { text: 'Loose Weight & Fractional Pricing', included: false },
-      { text: 'Full Store JSON Backup & Export', included: false },
+  GARMENTS: {
+    id: 'GARMENTS',
+    title: 'Garments & Boutique Plans',
+    urdu: 'گارمنٹس، بوتیک اور شلوار قمیض کے لیے پیکجز',
+    icon: '👕',
+    plans: [
+      {
+        id: 'garments_starter',
+        name: 'Single Boutique',
+        urdu: 'سنگل بوتیک پیکج',
+        tagline: 'Neighborhood ladies boutique, tailor shop, or kurta kiosk',
+        monthlyPrice: 2000,
+        yearlyPrice: 20000,
+        badge: 'Boutique Tier',
+        borderClass: 'border-blue-500/40',
+        headerBg: 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200',
+        features: [
+          { text: 'Apparel Sizes S, M, L, XL, XXL Run Matrix', included: true },
+          { text: 'Boutique Clothing Hang-Tag Barcode Printing', included: true },
+          { text: 'Max 800 Garment Items & Suits', included: true },
+          { text: 'WhatsApp Digital Bill & Fitting Notes', included: true },
+          { text: 'Customer Khata Udhar Book', included: true },
+          { text: 'Alteration & Tailoring Workshop Queue', included: false },
+          { text: 'Seasonal Collection Margin Analytics', included: false },
+          { text: 'Designer Consignment Management', included: false },
+        ],
+      },
+      {
+        id: 'garments_pro',
+        name: 'Fashion Outlet & Tailoring Pro',
+        urdu: 'فیشن آؤٹ لیٹ اور ٹیلرنگ ماسٹر',
+        tagline: 'Busy apparel stores, lawn centers & bridal boutiques',
+        monthlyPrice: 3800,
+        yearlyPrice: 38000,
+        badge: 'Most Popular',
+        popular: true,
+        borderClass: 'border-blue-500 shadow-lg shadow-blue-500/10 ring-2 ring-blue-500/20',
+        headerBg: 'bg-blue-500/10 text-blue-700 dark:text-blue-300',
+        features: [
+          { text: 'Apparel Sizes S to XXL Matrix + Color Variants', included: true },
+          { text: 'Alteration & Tailoring Queue with Pickup Date Alerts', included: true },
+          { text: 'Seasonal Lawn 3pc, Shawls & Kurta Collection Tracker', included: true },
+          { text: 'Custom Clothing Hang-Tags with Wash Care & SKU', included: true },
+          { text: 'WhatsApp Fitting Ready & Due Balance Alerts', included: true },
+          { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+          { text: 'Store Expense & Fabric Purchase Ledger', included: true },
+          { text: 'Designer Consignment Management', included: false },
+        ],
+      },
+      {
+        id: 'garments_enterprise',
+        name: 'Garments Department Store',
+        urdu: 'گارمنٹس میگا شو روم چین',
+        tagline: 'Multi-floor fashion showrooms, apparel chains & bridal houses',
+        monthlyPrice: 6800,
+        yearlyPrice: 68000,
+        badge: 'Enterprise',
+        borderClass: 'border-blue-600 shadow-xl shadow-blue-500/20',
+        headerBg: 'bg-blue-600/10 text-blue-600 dark:text-blue-400',
+        features: [
+          { text: 'Unlimited Garments, Fabrics & Stitched Suites', included: true },
+          { text: 'Master Tailoring Workshop Ledger with Multi-Master Tracking', included: true },
+          { text: 'Designer Consignment Payouts & Commission Tracking', included: true },
+          { text: 'Multi-Floor & Multi-Counter Fast POS Terminals', included: true },
+          { text: 'Seasonal Collection Clearance Margin Maximizer', included: true },
+          { text: 'Full Shop Backup & Automated Daily Exports', included: true },
+          { text: 'VIP Dedicated 24/7 Phone & WhatsApp Support', included: true },
+        ],
+      },
     ],
   },
-  {
-    id: 'premium',
-    name: 'Premium Supermart',
-    tagline: 'Complete retail suite with unlimited capabilities',
-    monthlyPrice: 5500,
-    yearlyPrice: 55000,
-    badge: 'All Unlocked',
-    borderClass: 'border-emerald-500/70 shadow-lg shadow-emerald-500/10',
-    headerBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300',
-    features: [
-      { text: 'Unlimited Products & Khata accounts', included: true },
-      { text: 'All Standard Plan features included', included: true },
-      { text: 'Loose Weight Fractional Pricing (Kg, Grams)', included: true },
-      { text: 'One-Click Full Shop JSON Backup & Download', included: true },
-      { text: 'Multi-Unit Carton/Wholesale Multipliers', included: true },
-      { text: 'Unlimited Barcode Sticker Printing', included: true },
-      { text: 'Complete Supplier Payables & Ledger', included: true },
-      { text: 'Priority Super Admin VIP Support', included: true },
+  GENERAL_STORE: {
+    id: 'GENERAL_STORE',
+    title: 'Supermart & Kiryana Plans',
+    urdu: 'سپر مارٹ، کریانہ اور ڈیپارٹمنٹل اسٹور کے لیے پیکجز',
+    icon: '🛒',
+    plans: [
+      {
+        id: 'supermart_starter',
+        name: 'Neighborhood Kiryana',
+        urdu: 'کریانہ و جنرل اسٹور',
+        tagline: 'Local Kiryana, corner grocery shop, or fruit & veg mart',
+        monthlyPrice: 1500,
+        yearlyPrice: 15000,
+        badge: 'Corner Shop',
+        borderClass: 'border-emerald-500/40',
+        headerBg: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200',
+        features: [
+          { text: 'Fast Loose Weight Scale Billing (Kg, Grams, Dozen)', included: true },
+          { text: 'Customer Khata Udhar Book with Balances', included: true },
+          { text: 'Max 400 FMCG Grocery Items', included: true },
+          { text: '80mm Thermal Receipt Generator (Zero Tax)', included: true },
+          { text: 'Sub-Second Barcode Scanner Checkout', included: false },
+          { text: 'Expiry Date Watchdog (<30 Days)', included: false },
+          { text: 'Wholesale Carton Unboxing Multipliers', included: false },
+          { text: 'Supplier Invoices & Payables', included: false },
+        ],
+      },
+      {
+        id: 'supermart_pro',
+        name: 'Supermarket Standard',
+        urdu: 'ماڈرن سپر مارکیٹ اسٹینڈرڈ',
+        tagline: 'Modern grocery marts, mini-marts, and departmental stores',
+        monthlyPrice: 3200,
+        yearlyPrice: 32000,
+        badge: 'Most Popular',
+        popular: true,
+        borderClass: 'border-emerald-500 shadow-lg shadow-emerald-500/10 ring-2 ring-emerald-500/20',
+        headerBg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+        features: [
+          { text: 'Sub-Second Barcode Scanner Checkout Terminal', included: true },
+          { text: 'Expiry Date Watchdog (<30 Days Alert for Dairy/Bread)', included: true },
+          { text: 'Loose Weight Scales + FMCG Packets Combined', included: true },
+          { text: 'Wholesale Carton Unboxing into Shelf Units', included: true },
+          { text: '1-Click WhatsApp Bills & Khata Udhar Reminders', included: true },
+          { text: 'Printable Product Barcode Stickers (Thermal & A4)', included: true },
+          { text: 'Day-End Cash Drawer (حساب) Reconciliation', included: true },
+          { text: 'Daily Store Expenses & Supplier Payables', included: true },
+        ],
+      },
+      {
+        id: 'supermart_enterprise',
+        name: 'Mega Mart / Cash & Carry',
+        urdu: 'میگا کیش اینڈ کیری ہائپر مارٹ',
+        tagline: 'High-volume hypermarkets, wholesale cash & carry chains',
+        monthlyPrice: 5800,
+        yearlyPrice: 58000,
+        badge: 'Enterprise',
+        borderClass: 'border-emerald-600 shadow-xl shadow-emerald-500/20',
+        headerBg: 'bg-emerald-600/10 text-emerald-600 dark:text-emerald-400',
+        features: [
+          { text: 'Unlimited FMCG Products, Barcodes & Aisles', included: true },
+          { text: 'Multi-Lane High-Speed Barcode Cashier Terminals', included: true },
+          { text: 'Advanced Expiry Management with Supplier Return Logs', included: true },
+          { text: 'Pallet / Wholesale Tiered Price Multipliers', included: true },
+          { text: 'Full Supplier Ledger & Goods Received Notes (GRN)', included: true },
+          { text: 'Full Shop Cloud JSON Backup & Data Export', included: true },
+          { text: 'VIP Dedicated 24/7 Super Admin Support Hotline', included: true },
+        ],
+      },
     ],
   },
-];
+  PERFUME: {
+    id: 'PERFUME',
+    title: 'Perfumery & Attar Plans',
+    urdu: 'عطر، خوشبو اور پرفیوم شاپ کے لیے پیکجز',
+    icon: '🧪',
+    plans: [
+      {
+        id: 'perfume_starter',
+        name: 'Attar & Fragrance Kiosk',
+        urdu: 'عطر و پرفیوم اسٹال پیکج',
+        tagline: 'Mall fragrance kiosk, traditional Ittar shop, or decant counter',
+        monthlyPrice: 1800,
+        yearlyPrice: 18000,
+        badge: 'Fragrance Kiosk',
+        borderClass: 'border-purple-500/40',
+        headerBg: 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200',
+        features: [
+          { text: 'Precision ML & Tola Dispensing (12ml, 6ml, 3ml)', included: true },
+          { text: 'Max 500 Fragrance Oils & Tester Bottles', included: true },
+          { text: 'Single POS Counter for Quick Decants', included: true },
+          { text: 'Customer Khata Udhar Book with Balances', included: true },
+          { text: 'WhatsApp Digital Bill with Scent Profile', included: true },
+          { text: 'Tester Spray Conversion & Depletion Auditor', included: false },
+          { text: 'Custom Scent Blend & Oil Formulation Vault', included: false },
+          { text: 'Concentrated Oil Drum Inventory', included: false },
+        ],
+      },
+      {
+        id: 'perfume_pro',
+        name: 'Luxury Perfumery House',
+        urdu: 'لگژری پرفیوم اور عطر ہاؤس',
+        tagline: 'High-end perfume stores, bespoke perfumers & Arabian Oud houses',
+        monthlyPrice: 3600,
+        yearlyPrice: 36000,
+        badge: 'Most Popular',
+        popular: true,
+        borderClass: 'border-purple-500 shadow-lg shadow-purple-500/10 ring-2 ring-purple-500/20',
+        headerBg: 'bg-purple-500/10 text-purple-700 dark:text-purple-300',
+        features: [
+          { text: 'Precision ML, Tola & Spray Decant Dispensing Engine', included: true },
+          { text: 'Tester Spray vs Sold Bottle Conversion Auditor (ROI)', included: true },
+          { text: 'Custom Blend Formulation Vault (Client Scent Recipes)', included: true },
+          { text: 'Fragrance Note Families (Dehn Al Oud, Musk, Amber, Citrus)', included: true },
+          { text: 'Bottle & Cap Packaging Inventory Tracking', included: true },
+          { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+          { text: 'WhatsApp Scent Cards with Notes & Dilution Details', included: true },
+          { text: 'Concentrated Oil Drum Inventory', included: false },
+        ],
+      },
+      {
+        id: 'perfume_enterprise',
+        name: 'Attar Chain & Manufacturer',
+        urdu: 'عطر فیکٹری اور برانڈڈ پرفیوم چین',
+        tagline: 'Bulk perfume oil importers, distributors & retail chains',
+        monthlyPrice: 6500,
+        yearlyPrice: 65000,
+        badge: 'Enterprise',
+        borderClass: 'border-purple-600 shadow-xl shadow-purple-500/20',
+        headerBg: 'bg-purple-600/10 text-purple-600 dark:text-purple-400',
+        features: [
+          { text: 'Unlimited Fragrance Oils, Flacons & Decants', included: true },
+          { text: 'Concentrated Pure Oil Drum (KG / Liters) Batch Master', included: true },
+          { text: 'Private Label Blend Recipes with Exact Cost Breakdown', included: true },
+          { text: 'Wholesale Tola Packing & Export Documentation', included: true },
+          { text: 'Multi-Kiosk & Multi-Branch Central Oil Master', included: true },
+          { text: 'Full Shop Backup & Automated Daily Formula Exports', included: true },
+          { text: 'VIP Dedicated 24/7 Super Admin Support Hotline', included: true },
+        ],
+      },
+    ],
+  },
+};
 
 const BillingPage = () => {
   const [billingData, setBillingData] = useState(null);
@@ -100,13 +320,18 @@ const BillingPage = () => {
   const [successMsg, setSuccessMsg] = useState('');
   const [isExportingBackup, setIsExportingBackup] = useState(false);
 
+  // Active Industry Vertical Selector for Specialized Plans
+  const [activeIndustryTab, setActiveIndustryTab] = useState(() => {
+    return localStorage.getItem('naveedpos_business_type') || 'GENERAL_STORE';
+  });
+
   // Selected Plan for License Renewal
-  const [selectedPlanId, setSelectedPlanId] = useState('standard');
+  const [selectedPlanId, setSelectedPlanId] = useState('supermart_pro');
   const [billingCycle, setBillingCycle] = useState('monthly'); // 'monthly' | 'yearly'
 
   // Payment Form State
   const [method, setMethod] = useState('JAZZCASH');
-  const [amount, setAmount] = useState('3000');
+  const [amount, setAmount] = useState('3200');
   const [transactionId, setTransactionId] = useState('');
   const [receiptUrl, setReceiptUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,6 +342,9 @@ const BillingPage = () => {
       const res = await tenantService.getMyBilling();
       if (res.data?.success) {
         setBillingData(res.data.billing);
+        if (res.data.billing.businessType) {
+          setActiveIndustryTab(res.data.billing.businessType);
+        }
         if (res.data.billing.plan && res.data.billing.plan !== 'trial') {
           setSelectedPlanId(res.data.billing.plan);
         }
@@ -135,10 +363,12 @@ const BillingPage = () => {
 
   // Synchronize amount when selected plan or cycle changes
   useEffect(() => {
-    const planObj = PLANS_DATA.find((p) => p.id === selectedPlanId) || PLANS_DATA[1];
+    const allPlans = Object.values(MODULE_PLANS_DATA).flatMap((m) => m.plans);
+    const currentIndustryPlans = MODULE_PLANS_DATA[activeIndustryTab]?.plans || MODULE_PLANS_DATA.GENERAL_STORE.plans;
+    const planObj = allPlans.find((p) => p.id === selectedPlanId) || currentIndustryPlans[1] || currentIndustryPlans[0];
     const price = billingCycle === 'yearly' ? planObj.yearlyPrice : planObj.monthlyPrice;
     setAmount(String(price));
-  }, [selectedPlanId, billingCycle]);
+  }, [selectedPlanId, billingCycle, activeIndustryTab]);
 
   const handleDownloadBackup = async () => {
     try {
@@ -440,21 +670,52 @@ const BillingPage = () => {
         </div>
       </div>
 
-      {/* 3-Tier SaaS Commercial Pricing Cards */}
+      {/* Industry Module Specific Plan Selector Tabs & Pricing Cards */}
       <div className="space-y-4">
+        {/* Industry Module Tabs */}
+        <div className="bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700/80 flex flex-wrap gap-1.5">
+          {Object.values(MODULE_PLANS_DATA).map((mod) => {
+            const isTabActive = activeIndustryTab === mod.id;
+            return (
+              <button
+                key={mod.id}
+                type="button"
+                onClick={() => {
+                  setActiveIndustryTab(mod.id);
+                  const firstProPlan = mod.plans[1] || mod.plans[0];
+                  setSelectedPlanId(firstProPlan.id);
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 active:scale-95 ${
+                  isTabActive
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-black shadow-sm ring-1 ring-emerald-500'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                }`}
+              >
+                <span className="text-sm">{mod.icon}</span>
+                <span>{mod.title}</span>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-emerald-600" />
-              <span>Choose Your Retail Subscription Plan</span>
-            </h3>
-            <p className="text-xs text-slate-500">
-              Select the plan that fits your retail store size and submit renewal verification below.
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-emerald-600" />
+                <span>{MODULE_PLANS_DATA[activeIndustryTab]?.title || 'Store Subscription Plans'}</span>
+              </h3>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                Industry Specific
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 font-sans" dir="rtl">
+              {MODULE_PLANS_DATA[activeIndustryTab]?.urdu}
             </p>
           </div>
 
           {/* Monthly / Yearly Toggle */}
-          <div className="inline-flex p-1 bg-slate-200 dark:bg-slate-800 rounded-xl">
+          <div className="inline-flex p-1 bg-slate-200 dark:bg-slate-800 rounded-xl flex-shrink-0">
             <button
               onClick={() => setBillingCycle('monthly')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
@@ -482,7 +743,7 @@ const BillingPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {PLANS_DATA.map((p) => {
+          {(MODULE_PLANS_DATA[activeIndustryTab]?.plans || MODULE_PLANS_DATA.GENERAL_STORE.plans).map((p) => {
             const isSelected = selectedPlanId === p.id;
             const price = billingCycle === 'yearly' ? p.yearlyPrice : p.monthlyPrice;
 
@@ -503,7 +764,7 @@ const BillingPage = () => {
                 )}
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-black uppercase tracking-wider text-slate-500">
                       {p.name}
                     </span>
@@ -513,6 +774,11 @@ const BillingPage = () => {
                       </span>
                     )}
                   </div>
+                  {p.urdu && (
+                    <p className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-2 font-sans" dir="rtl">
+                      {p.urdu}
+                    </p>
+                  )}
 
                   <div className="flex items-baseline gap-1 my-2">
                     <span className="text-3xl font-black text-slate-900 dark:text-white">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import Modal from '../../components/common/Modal';
@@ -72,20 +72,9 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     location.pathname === '/free-trial' ||
     defaultTab === 'signup';
 
-  // Persistent Owner Mode unlock state (for the owner: Naveed)
-  const [isOwnerUnlocked, setIsOwnerUnlocked] = useState(() => {
-    try {
-      return (
-        isSuperAdminPath ||
-        localStorage.getItem('naveedpos_owner_mode') === 'true'
-      );
-    } catch {
-      return isSuperAdminPath;
-    }
-  });
-
   // Active tab state: 'login' | 'signup' | 'superadmin'
-  // Regular visitors see two tabs: [ Sign In ] and [ Start 14-Day Free Trial ]
+  // Regular store visitors strictly see two tabs: [ Sign In ] and [ Start 14-Day Free Trial ]
+  // Super Admin tab is strictly isolated to /super-admin-login
   const [activeTab, setActiveTab] = useState(() => {
     if (isSuperAdminPath) return 'superadmin';
     if (
@@ -96,17 +85,17 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     ) {
       return 'signup';
     }
-    return 'login'; // Default to Sign In
+    return 'login'; // Default to Store Sign In
   });
 
   // Form Fields State
   const [identifier, setIdentifier] = useState(() => {
     if (isSuperAdminPath) return 'naveed@naveedpos.com';
-    return '';
+    return 'admin@naveedpos.com';
   });
   const [password, setPassword] = useState(() => {
     if (isSuperAdminPath) return 'Naveed@POS2026!';
-    return '';
+    return 'admin123';
   });
   const [shopName, setShopName] = useState('');
   const [ownerName, setOwnerName] = useState('');
@@ -179,27 +168,11 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
     try {
       localStorage.setItem('naveedpos_business_type', modType);
       setSelectedBusinessModule(modType);
-      await handleLoginSubmit(null, 'store@naveedpos.com', 'admin123');
-    } catch {}
-  };
-
-  // Dynamic Owner Detection:
-  // Option 1 (Super Admin) is ONLY revealed to the owner (naveed@naveedpos.com),
-  // or when visiting the private admin URL, or when unlocked via the discreet key.
-  // It is NEVER shown to regular store visitors or public guests.
-  const isOwnerDetected =
-    isSuperAdminPath ||
-    isOwnerUnlocked ||
-    identifier.trim().toLowerCase() === 'naveed@naveedpos.com';
-
-  // Persist owner mode if detected
-  useEffect(() => {
-    if (isOwnerDetected) {
-      try {
-        localStorage.setItem('naveedpos_owner_mode', 'true');
-      } catch (e) {}
+      await handleLoginSubmit(null, 'admin@naveedpos.com', 'admin123');
+    } catch (err) {
+      console.error('Launch Demo Error:', err);
     }
-  }, [isOwnerDetected]);
+  };
 
   // UI States
   const [isLoading, setIsLoading] = useState(false);
@@ -209,53 +182,39 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
 
   // Sync tab with URL path changes
   useEffect(() => {
-    if (
-      location.pathname === '/super-admin-login' ||
-      location.pathname === '/superadmin' ||
-      location.pathname === '/admin-portal' ||
-      defaultTab === 'superadmin'
-    ) {
+    if (isSuperAdminPath) {
       setActiveTab('superadmin');
-      setIsOwnerUnlocked(true);
-      if (!identifier || identifier === 'store@naveedpos.com' || identifier === 'admin@naveedpos.com') {
+      if (!identifier || identifier === 'admin@naveedpos.com' || identifier === 'store@naveedpos.com') {
         setIdentifier('naveed@naveedpos.com');
         setPassword('Naveed@POS2026!');
       }
     } else if (location.pathname === '/signup' || location.pathname === '/free-trial') {
       setActiveTab('signup');
-    } else if (location.pathname === '/login' || location.pathname === '/store-login') {
+    } else {
       setActiveTab('login');
-      if (identifier === 'naveed@naveedpos.com') {
-        setIdentifier('store@naveedpos.com');
+      if (!identifier || identifier === 'naveed@naveedpos.com') {
+        setIdentifier('admin@naveedpos.com');
         setPassword('admin123');
       }
     }
-  }, [location.pathname, defaultTab]);
+  }, [location.pathname, defaultTab, isSuperAdminPath]);
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setErrorMsg('');
     setSubscriptionError('');
     if (tab === 'superadmin') {
-      setIsOwnerUnlocked(true);
-      try {
-        localStorage.setItem('naveedpos_owner_mode', 'true');
-      } catch (e) {}
       setIdentifier('naveed@naveedpos.com');
       setPassword('Naveed@POS2026!');
       navigate('/super-admin-login', { replace: true });
     } else if (tab === 'signup') {
-      if (identifier === 'naveed@naveedpos.com' || identifier === 'store@naveedpos.com') {
-        setIdentifier('');
-        setPassword('');
-      }
+      setIdentifier('');
+      setPassword('');
       navigate('/free-trial', { replace: true });
     } else {
       // Store Sign In (Login)
-      if (identifier === 'naveed@naveedpos.com') {
-        setIdentifier('');
-        setPassword('');
-      }
+      setIdentifier('admin@naveedpos.com');
+      setPassword('admin123');
       navigate('/login', { replace: true });
     }
   };
@@ -602,7 +561,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
               {/* ------------------------------------------------------------- */}
               <div
                 className={`grid ${
-                  activeTab === 'superadmin' ? 'grid-cols-3' : 'grid-cols-2'
+                  isSuperAdminPath ? 'grid-cols-3' : 'grid-cols-2'
                 } p-1 bg-slate-100 dark:bg-[#0B132B]/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-3.5 transition-all duration-300 gap-1`}
               >
                 {/* 1. SIGN IN TAB - Default for returning Store Owners, Cashiers, and Super Admin */}
@@ -635,12 +594,16 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   <span className="truncate">Start 14-Day Free Trial</span>
                 </button>
 
-                {/* 3. SUPER ADMIN TAB - Only visible when visiting private admin URL or unlocked */}
-                {activeTab === 'superadmin' && (
+                {/* 3. SUPER ADMIN TAB - Only visible when visiting private admin URL */}
+                {isSuperAdminPath && (
                   <button
                     type="button"
                     onClick={() => handleTabChange('superadmin')}
-                    className="min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20"
+                    className={`min-h-[44px] px-1 sm:px-2 py-2 text-[11px] sm:text-xs font-black rounded-xl transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-1.5 active:scale-[0.97] ${
+                      activeTab === 'superadmin'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-500/25 ring-1 ring-white/20'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50'
+                    }`}
                     title="Platform Owner Console (/super-admin-login)"
                   >
                     <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
@@ -1149,11 +1112,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
         <button
           type="button"
           onClick={() => {
-            setIsOwnerUnlocked(true);
-            try {
-              localStorage.setItem('naveedpos_owner_mode', 'true');
-            } catch (e) {}
-            handleTabChange('superadmin');
+            navigate('/super-admin-login');
           }}
           className="inline-flex items-center text-slate-400 hover:text-indigo-500 transition opacity-40 hover:opacity-100 p-1 min-h-[36px] min-w-[36px] justify-center active:scale-95"
           title="Platform Owner Console"

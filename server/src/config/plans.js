@@ -1,4 +1,4 @@
-// Subscription Plans Configuration & Limits for NaveedPOS SaaS
+// Subscription Plans Configuration & Limits for NaveedPOS Multi-Industry SaaS
 const SUBSCRIPTION_PLANS = {
   trial: {
     id: 'trial',
@@ -106,14 +106,281 @@ const SUBSCRIPTION_PLANS = {
   },
 };
 
-const getPlanLimits = (planId) => {
+// Specialized Industry-Specific Subscription Plans for Pakistani Retail Verticals
+const MODULE_PLANS = {
+  FOOTWEAR: [
+    {
+      id: 'footwear_starter',
+      name: 'Footwear Single Outlet',
+      urdu: 'جوتے سنگل شاپ پیکج',
+      tagline: 'Small shoe shop, chappal store, or bazaar stall',
+      monthlyPrice: 1800,
+      yearlyPrice: 18000,
+      badge: 'Bazaar Tier',
+      limits: { maxProducts: 600, maxKhataCustomers: 200 },
+      features: [
+        { text: 'Pakistani Sizes 6 to 11 Run Matrix', included: true },
+        { text: 'Max 600 Shoe Models & Pairs', included: true },
+        { text: 'Single POS Checkout Counter', included: true },
+        { text: 'Print Shoe Box Barcode Stickers', included: true },
+        { text: 'WhatsApp Digital Shoe Bill', included: true },
+        { text: 'Broken Size Run Auto-Alerts', included: false },
+        { text: 'Brand Turnover Analytics (Bata/Service)', included: false },
+        { text: 'Multi-Branch Inventory Sync', included: false },
+      ],
+    },
+    {
+      id: 'footwear_pro',
+      name: 'Shoe Mart & Boutique Pro',
+      urdu: 'پروفیشنل شو مارٹ اور برانڈ',
+      tagline: 'High-volume footwear showrooms, malls, and boutiques',
+      monthlyPrice: 3500,
+      yearlyPrice: 35000,
+      badge: 'Most Popular',
+      popular: true,
+      limits: { maxProducts: 3000, maxKhataCustomers: 5000 },
+      features: [
+        { text: 'Pakistani Sizes 6 to 11 Run Matrix', included: true },
+        { text: 'Max 3,000 Shoe Models & Pairs', included: true },
+        { text: 'Broken Size Run Auto-Alerts (Critical 7, 8, 9)', included: true },
+        { text: 'Brand Analytics (Bata, Service, Peshawari Kheri)', included: true },
+        { text: 'Shoe Box Barcodes + Shoe Exchange Ledger', included: true },
+        { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+        { text: 'Customer Khata Udhar Book with WhatsApp Reminders', included: true },
+        { text: 'Multi-Branch Inventory Sync', included: false },
+      ],
+    },
+    {
+      id: 'footwear_enterprise',
+      name: 'Footwear Chain & Factory',
+      urdu: 'جوتے ہول سیل اور فیکٹری چین',
+      tagline: 'Shoe manufacturers, wholesale carton packers & chains',
+      monthlyPrice: 6200,
+      yearlyPrice: 62000,
+      badge: 'Enterprise',
+      limits: { maxProducts: 999999, maxKhataCustomers: 999999 },
+      features: [
+        { text: 'Unlimited Shoe Models & Pairs', included: true },
+        { text: 'Wholesale Carton-to-Pair Unboxing Multipliers', included: true },
+        { text: 'Broken Size Watchdog with Automatic Reordering', included: true },
+        { text: 'Multi-Counter & Multi-Branch Cloud Sync', included: true },
+        { text: 'Master Factory Khata & Supplier Payables', included: true },
+        { text: 'Full Automated Database Backup & JSON Download', included: true },
+        { text: 'Priority Super Admin VIP Support 24/7', included: true },
+      ],
+    },
+  ],
+  GARMENTS: [
+    {
+      id: 'garments_starter',
+      name: 'Single Boutique',
+      urdu: 'سنگل بوتیک پیکج',
+      tagline: 'Neighborhood ladies boutique, tailor shop, or kurta kiosk',
+      monthlyPrice: 2000,
+      yearlyPrice: 20000,
+      badge: 'Starter Boutique',
+      limits: { maxProducts: 800, maxKhataCustomers: 300 },
+      features: [
+        { text: 'Apparel Sizes S, M, L, XL, XXL Run', included: true },
+        { text: 'Boutique Clothing Hang-Tag Barcode Printing', included: true },
+        { text: 'Max 800 Garment Items & Suits', included: true },
+        { text: 'WhatsApp Digital Bill & Fitting Notes', included: true },
+        { text: 'Customer Khata Udhar Book', included: true },
+        { text: 'Alteration & Tailoring Workshop Queue', included: false },
+        { text: 'Seasonal Collection Margin Analytics', included: false },
+        { text: 'Designer Consignment Management', included: false },
+      ],
+    },
+    {
+      id: 'garments_pro',
+      name: 'Fashion Outlet & Tailoring Pro',
+      urdu: 'فیشن آؤٹ لیٹ اور ٹیلرنگ ماسٹر',
+      tagline: 'Busy apparel stores, lawn centers & bridal boutiques',
+      monthlyPrice: 3800,
+      yearlyPrice: 38000,
+      badge: 'Most Popular',
+      popular: true,
+      limits: { maxProducts: 4000, maxKhataCustomers: 10000 },
+      features: [
+        { text: 'Apparel Sizes S to XXL Matrix + Color Variants', included: true },
+        { text: 'Alteration & Tailoring Queue with Pickup Date Alerts', included: true },
+        { text: 'Seasonal Lawn 3pc, Shawls & Kurta Collection Tracker', included: true },
+        { text: 'Custom Clothing Hang-Tags with Wash Care & SKU', included: true },
+        { text: 'WhatsApp Fitting Ready & Due Balance Alerts', included: true },
+        { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+        { text: 'Store Expense & Fabric Purchase Ledger', included: true },
+        { text: 'Designer Consignment Management', included: false },
+      ],
+    },
+    {
+      id: 'garments_enterprise',
+      name: 'Garments Department Store',
+      urdu: 'گارمنٹس ڈیپارٹمنٹل میگا اسٹور',
+      tagline: 'Multi-floor fashion showrooms, apparel chains & bridal houses',
+      monthlyPrice: 6800,
+      yearlyPrice: 68000,
+      badge: 'Enterprise',
+      limits: { maxProducts: 999999, maxKhataCustomers: 999999 },
+      features: [
+        { text: 'Unlimited Garments, Fabrics & Stitched Suites', included: true },
+        { text: 'Master Tailoring Workshop Ledger with Multi-Master Tracking', included: true },
+        { text: 'Designer Consignment Payouts & Commission Tracking', included: true },
+        { text: 'Multi-Floor & Multi-Counter Fast POS Terminals', included: true },
+        { text: 'Seasonal Collection Clearance Margin Maximizer', included: true },
+        { text: 'Full Shop Backup & Automated Daily Exports', included: true },
+        { text: 'VIP Dedicated 24/7 Phone & WhatsApp Support', included: true },
+      ],
+    },
+  ],
+  GENERAL_STORE: [
+    {
+      id: 'supermart_starter',
+      name: 'Neighborhood Kiryana',
+      urdu: 'کریانہ و جنرل اسٹور',
+      tagline: 'Local Kiryana, corner grocery shop, or fruit & veg mart',
+      monthlyPrice: 1500,
+      yearlyPrice: 15000,
+      badge: 'Corner Shop',
+      limits: { maxProducts: 400, maxKhataCustomers: 100 },
+      features: [
+        { text: 'Fast Loose Weight Scale Billing (Kg, Grams, Dozen)', included: true },
+        { text: 'Customer Khata Udhar Book with Balances', included: true },
+        { text: 'Max 400 FMCG Grocery Items', included: true },
+        { text: '80mm Thermal Receipt Generator (Zero Tax)', included: true },
+        { text: 'Sub-Second Barcode Scanner Checkout', included: false },
+        { text: 'Expiry Date Watchdog (<30 Days)', included: false },
+        { text: 'Wholesale Carton Unboxing Multipliers', included: false },
+        { text: 'Supplier Invoices & Payables', included: false },
+      ],
+    },
+    {
+      id: 'supermart_pro',
+      name: 'Supermarket Standard',
+      urdu: 'ماڈرن سپر مارکیٹ اسٹینڈرڈ',
+      tagline: 'Modern grocery marts, mini-marts, and departmental stores',
+      monthlyPrice: 3200,
+      yearlyPrice: 32000,
+      badge: 'Most Popular',
+      popular: true,
+      limits: { maxProducts: 3500, maxKhataCustomers: 10000 },
+      features: [
+        { text: 'Sub-Second Barcode Scanner Checkout Terminal', included: true },
+        { text: 'Expiry Date Watchdog (<30 Days Alert for Dairy/Bread)', included: true },
+        { text: 'Loose Weight Scales + FMCG Packets Combined', included: true },
+        { text: 'Wholesale Carton Unboxing into Shelf Units', included: true },
+        { text: '1-Click WhatsApp Bills & Khata Udhar Reminders', included: true },
+        { text: 'Printable Product Barcode Stickers (Thermal & A4)', included: true },
+        { text: 'Day-End Cash Drawer (حساب) Reconciliation', included: true },
+        { text: 'Daily Store Expenses & Supplier Payables', included: true },
+      ],
+    },
+    {
+      id: 'supermart_enterprise',
+      name: 'Mega Mart / Cash & Carry',
+      urdu: 'میگا کیش اینڈ کیری ہائپر مارٹ',
+      tagline: 'High-volume hypermarkets, wholesale cash & carry chains',
+      monthlyPrice: 5800,
+      yearlyPrice: 58000,
+      badge: 'Enterprise',
+      limits: { maxProducts: 999999, maxKhataCustomers: 999999 },
+      features: [
+        { text: 'Unlimited FMCG Products, Barcodes & Aisles', included: true },
+        { text: 'Multi-Lane High-Speed Barcode Cashier Terminals', included: true },
+        { text: 'Advanced Expiry Management with Supplier Return Logs', included: true },
+        { text: 'Pallet / Wholesale Tiered Price Multipliers', included: true },
+        { text: 'Full Supplier Ledger & Goods Received Notes (GRN)', included: true },
+        { text: 'Full Shop Cloud JSON Backup & Data Export', included: true },
+        { text: 'VIP Dedicated 24/7 Super Admin Support Hotline', included: true },
+      ],
+    },
+  ],
+  PERFUME: [
+    {
+      id: 'perfume_starter',
+      name: 'Attar & Fragrance Kiosk',
+      urdu: 'عطر و پرفیوم اسٹال پیکج',
+      tagline: 'Mall fragrance kiosk, traditional Ittar shop, or decant counter',
+      monthlyPrice: 1800,
+      yearlyPrice: 18000,
+      badge: 'Fragrance Kiosk',
+      limits: { maxProducts: 500, maxKhataCustomers: 250 },
+      features: [
+        { text: 'Precision ML & Tola Dispensing (12ml, 6ml, 3ml)', included: true },
+        { text: 'Max 500 Fragrance Oils & Tester Bottles', included: true },
+        { text: 'Single POS Counter for Quick Decants', included: true },
+        { text: 'Customer Khata Udhar Book with Balances', included: true },
+        { text: 'WhatsApp Digital Bill with Scent Profile', included: true },
+        { text: 'Tester Spray Conversion & Depletion Auditor', included: false },
+        { text: 'Custom Scent Blend & Oil Formulation Vault', included: false },
+        { text: 'Concentrated Oil Drum Inventory', included: false },
+      ],
+    },
+    {
+      id: 'perfume_pro',
+      name: 'Luxury Perfumery House',
+      urdu: 'لگژری پرفیوم اور عطر ہاؤس',
+      tagline: 'High-end perfume stores, bespoke perfumers & Arabian Oud houses',
+      monthlyPrice: 3600,
+      yearlyPrice: 36000,
+      badge: 'Most Popular',
+      popular: true,
+      limits: { maxProducts: 3000, maxKhataCustomers: 10000 },
+      features: [
+        { text: 'Precision ML, Tola & Spray Decant Dispensing Engine', included: true },
+        { text: 'Tester Spray vs Sold Bottle Conversion Auditor (ROI)', included: true },
+        { text: 'Custom Blend Formulation Vault (Client Scent Recipes)', included: true },
+        { text: 'Fragrance Note Families (Dehn Al Oud, Musk, Amber, Citrus)', included: true },
+        { text: 'Bottle & Cap Packaging Inventory Tracking', included: true },
+        { text: 'Day-End Cash Drawer (Sham ka Hisaab)', included: true },
+        { text: 'WhatsApp Scent Cards with Notes & Dilution Details', included: true },
+        { text: 'Concentrated Oil Drum Inventory', included: false },
+      ],
+    },
+    {
+      id: 'perfume_enterprise',
+      name: 'Attar Chain & Manufacturer',
+      urdu: 'عطر فیکٹری اور برانڈڈ پرفیوم چین',
+      tagline: 'Bulk perfume oil importers, distributors & retail chains',
+      monthlyPrice: 6500,
+      yearlyPrice: 65000,
+      badge: 'Enterprise',
+      limits: { maxProducts: 999999, maxKhataCustomers: 999999 },
+      features: [
+        { text: 'Unlimited Fragrance Oils, Flacons & Decants', included: true },
+        { text: 'Concentrated Pure Oil Drum (KG / Liters) Batch Master', included: true },
+        { text: 'Private Label Blend Recipes with Exact Cost Breakdown', included: true },
+        { text: 'Wholesale Tola Packing & Export Documentation', included: true },
+        { text: 'Multi-Kiosk & Multi-Branch Central Oil Master', included: true },
+        { text: 'Full Shop Backup & Automated Daily Formula Exports', included: true },
+        { text: 'VIP Dedicated 24/7 Super Admin Support Hotline', included: true },
+      ],
+    },
+  ],
+};
+
+const getPlanLimits = (planId, businessType = 'GENERAL_STORE') => {
   const normalized = (planId || 'trial').toLowerCase();
   if (normalized === 'monthly') return SUBSCRIPTION_PLANS.standard.limits;
   if (normalized === 'yearly') return SUBSCRIPTION_PLANS.premium.limits;
-  return SUBSCRIPTION_PLANS[normalized]?.limits || SUBSCRIPTION_PLANS.trial.limits;
+  if (SUBSCRIPTION_PLANS[normalized]) return SUBSCRIPTION_PLANS[normalized].limits;
+
+  // Search module plans
+  const bType = (businessType || 'GENERAL_STORE').toUpperCase();
+  const list = MODULE_PLANS[bType] || MODULE_PLANS.GENERAL_STORE;
+  const match = list.find((p) => p.id === planId);
+  if (match) return match.limits;
+
+  return SUBSCRIPTION_PLANS.trial.limits;
+};
+
+const getModulePlans = (businessType = 'GENERAL_STORE') => {
+  const bType = (businessType || 'GENERAL_STORE').toUpperCase();
+  return MODULE_PLANS[bType] || MODULE_PLANS.GENERAL_STORE;
 };
 
 module.exports = {
   SUBSCRIPTION_PLANS,
+  MODULE_PLANS,
   getPlanLimits,
+  getModulePlans,
 };

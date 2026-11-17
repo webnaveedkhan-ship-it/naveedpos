@@ -121,6 +121,8 @@ const login = async (req, res, next) => {
     // Common username aliases for frictionless convenience
     const usernameAliases = {
       admin: 'admin@naveedpos.com',
+      store: 'admin@naveedpos.com',
+      'store@naveedpos.com': 'admin@naveedpos.com',
       superadmin: 'naveed@naveedpos.com',
       naveed: 'naveed@naveedpos.com',
       tahir: 'admin@naveedpos.com',

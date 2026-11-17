@@ -193,6 +193,21 @@ class MemoryStore {
         },
       },
       {
+        _id: 'usr_store_demo',
+        name: 'Store Demo Admin',
+        email: 'store@naveedpos.com',
+        password: adminPass,
+        role: 'STORE_ADMIN',
+        tenantId: 'tenant_1',
+        status: 'active',
+        isActive: true,
+        phone: '+92 300 9999999',
+        createdAt: new Date(),
+        matchPassword: async function (p) {
+          return bcrypt.compare(p, this.password);
+        },
+      },
+      {
         _id: 'usr_khan_1',
         name: 'Khan Admin',
         email: 'khan@naveedpos.com',

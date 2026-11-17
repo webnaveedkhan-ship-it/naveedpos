@@ -373,7 +373,68 @@ const DashboardPage = () => {
       )}
 
       {/* ------------------------------------------------------------- */}
-      {/* Interactive Business Module Selector Header                   */}
+      {/* 1. TOP HEADER & MULTI-PERIOD CONTROLS                         */}
+      {/* ------------------------------------------------------------- */}
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+      >
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              {activeModule === 'FOOTWEAR'
+                ? '👟 Footwear & Shoe Mart Dashboard'
+                : activeModule === 'GARMENTS'
+                ? '👕 Garments & Boutique Dashboard'
+                : activeModule === 'PERFUME'
+                ? '🧪 Perfumery & Attar House Dashboard'
+                : '🛒 Supermart & Kiryana Mart Dashboard'}
+            </h1>
+            {isRefreshing && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 rounded-full animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping" />
+                Syncing...
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Real-time industry metrics, counter billing, stock velocity & customer Khata ledger
+          </p>
+        </div>
+
+        {/* Action Controls & Multi-Period Segmented Control */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsCashDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold transition shadow-xs"
+            title="Audit Day-End Drawer Cash (Sham ka Hisaab)"
+          >
+            <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Cash Drawer (شام کا حساب)</span>
+          </button>
+
+          <PeriodSelector
+            activePeriod={activePeriod}
+            onPeriodChange={handlePeriodChange}
+            startDate={customDates.startDate}
+            endDate={customDates.endDate}
+            isLoading={isRefreshing}
+          />
+
+          <button
+            type="button"
+            onClick={() => navigate('/pos')}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black rounded-xl text-xs shadow-md shadow-emerald-500/20 active:scale-95 transition"
+          >
+            <ShoppingCart className="w-3.5 h-3.5" />
+            <span>Open POS Counter</span>
+          </button>
+        </div>
+      </motion.div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 2. Interactive Business Module Switcher Bar                   */}
       {/* ------------------------------------------------------------- */}
       <motion.div variants={itemVariants}>
         <ModuleSwitcherHeader
@@ -386,7 +447,7 @@ const DashboardPage = () => {
       </motion.div>
 
       {/* ------------------------------------------------------------- */}
-      {/* Specialized Business Domain Dashboard (Footwear/Garments/etc) */}
+      {/* 3. Specialized Business Domain Dashboard (Footwear/Garments)  */}
       {/* ------------------------------------------------------------- */}
       <motion.div variants={itemVariants}>
         {activeModule === 'FOOTWEAR' && (
@@ -429,50 +490,6 @@ const DashboardPage = () => {
             onOpenPos={() => navigate('/pos')}
           />
         )}
-      </motion.div>
-
-      {/* Header & Multi-Period Segmented Control */}
-      <motion.div
-        variants={itemVariants}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
-      >
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Store Dashboard
-            </h1>
-            {isRefreshing && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 rounded-full animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-ping" />
-                Syncing...
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Real-time financial performance, counter sales & customer udhar ledger
-          </p>
-        </div>
-
-        {/* Action Controls & Multi-Period Segmented Control */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setIsCashDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-900 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-xl text-xs font-bold transition shadow-xs"
-            title="Audit Day-End Drawer Cash (Sham ka Hisaab)"
-          >
-            <Calculator className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Cash Drawer (شام کا حساب)</span>
-          </button>
-
-          <PeriodSelector
-            activePeriod={activePeriod}
-            onPeriodChange={handlePeriodChange}
-            startDate={customDates.startDate}
-            endDate={customDates.endDate}
-            isLoading={isRefreshing}
-          />
-        </div>
       </motion.div>
 
       {/* 1. Synchronized Top Metric Cards (KPIs) */}

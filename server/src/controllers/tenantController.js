@@ -6,7 +6,7 @@ const CustomerKhata = require('../models/CustomerKhata');
 const SubscriptionPayment = require('../models/SubscriptionPayment');
 const bcrypt = require('bcryptjs');
 const memoryStore = require('../config/memoryStore');
-const { SUBSCRIPTION_PLANS, getPlanLimits } = require('../config/plans');
+const { SUBSCRIPTION_PLANS, MODULE_PLANS, getPlanLimits } = require('../config/plans');
 const { uploadToCloud } = require('../services/cloudStorageService');
 
 // @desc    Get all tenants with subscriber metrics (Super Admin only)
@@ -310,7 +310,14 @@ const updateTenantPlan = async (req, res, next) => {
   try {
     const { plan, extendDays } = req.body;
     const normalizedPlan = (plan || '').toLowerCase();
-    if (!['trial', 'basic', 'standard', 'premium'].includes(normalizedPlan)) {
+    const allowedPlans = [
+      'trial', 'basic', 'standard', 'premium', 'monthly', 'yearly',
+      'footwear_starter', 'footwear_pro', 'footwear_enterprise',
+      'garments_starter', 'garments_pro', 'garments_enterprise',
+      'supermart_starter', 'supermart_pro', 'supermart_enterprise',
+      'perfume_starter', 'perfume_pro', 'perfume_enterprise'
+    ];
+    if (!allowedPlans.includes(normalizedPlan)) {
       return res.status(400).json({ success: false, message: 'Invalid subscription plan specified' });
     }
 
@@ -549,6 +556,8 @@ const getMyTenantBilling = async (req, res, next) => {
           khataCustomersCount,
         },
         availablePlans: SUBSCRIPTION_PLANS,
+        businessType: tenant.businessType || 'GENERAL_STORE',
+        modulePlans: MODULE_PLANS,
         subscriptionExpiresAt: tenant.subscriptionExpiresAt,
         daysRemaining,
         isExpired,
