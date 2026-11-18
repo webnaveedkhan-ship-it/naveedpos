@@ -33,7 +33,7 @@ import {
 
 const KhataPage = () => {
   const { tenantName, planLimits } = useAuth();
-  const storeName = tenantName || 'NORMEGA MART';
+  const storeName = tenantName || 'Al-Madina Super Store';
   const [metrics, setMetrics] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);

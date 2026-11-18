@@ -126,6 +126,36 @@ const DashboardPage = () => {
     fetchDashboardData(activePeriod);
   }, [activePeriod, fetchDashboardData]);
 
+  // Real-time synchronization when a new POS sale, expense, or Khata entry is recorded
+  useEffect(() => {
+    const handleSync = () => {
+      fetchDashboardData(activePeriod);
+    };
+
+    window.addEventListener('sale-completed', handleSync);
+    window.addEventListener('pos-sale-completed', handleSync);
+    window.addEventListener('expense-added', handleSync);
+    window.addEventListener('expense-updated', handleSync);
+    window.addEventListener('khata-updated', handleSync);
+    window.addEventListener('inventory-updated', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    const interval = setInterval(() => {
+      fetchDashboardData(activePeriod);
+    }, 30000);
+
+    return () => {
+      window.removeEventListener('sale-completed', handleSync);
+      window.removeEventListener('pos-sale-completed', handleSync);
+      window.removeEventListener('expense-added', handleSync);
+      window.removeEventListener('expense-updated', handleSync);
+      window.removeEventListener('khata-updated', handleSync);
+      window.removeEventListener('inventory-updated', handleSync);
+      window.removeEventListener('focus', handleSync);
+      clearInterval(interval);
+    };
+  }, [activePeriod, fetchDashboardData]);
+
   // Handle period toggle from Segmented Control
   const handlePeriodChange = (newPeriod, optionalCustomRange = null) => {
     setActivePeriod(newPeriod);
@@ -434,16 +464,38 @@ const DashboardPage = () => {
       </motion.div>
 
       {/* ------------------------------------------------------------- */}
-      {/* 2. Interactive Business Module Switcher Bar                   */}
+      {/* 2. Active Business Model Isolation Banner                     */}
       {/* ------------------------------------------------------------- */}
-      <motion.div variants={itemVariants}>
-        <ModuleSwitcherHeader
-          currentModule={activeModule}
-          onSelectModule={(newMod) => {
-            setActiveModule(newMod);
-            if (switchBusinessType) switchBusinessType(newMod);
-          }}
-        />
+      <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+        <div className="flex items-center space-x-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg flex-shrink-0">
+            {activeModule === 'FOOTWEAR' ? '👟' : activeModule === 'GARMENTS' ? '👕' : activeModule === 'PERFUME' ? '🧴' : '🛒'}
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Active Business Model:</span>
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {activeModule === 'FOOTWEAR'
+                  ? 'Footwear & Shoe Mart'
+                  : activeModule === 'GARMENTS'
+                  ? 'Garments & Apparel Boutique'
+                  : activeModule === 'PERFUME'
+                  ? 'Perfumery & Fragrance House'
+                  : 'Super Mart & Kiryana General Store'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Only showing tailored metrics and workflows configured specifically for your retail format.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/billing"
+          className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline flex items-center space-x-1 flex-shrink-0"
+        >
+          <span>Subscription &amp; Plans</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </motion.div>
 
       {/* ------------------------------------------------------------- */}

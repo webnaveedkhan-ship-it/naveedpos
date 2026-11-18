@@ -140,6 +140,7 @@ const ExpensesPage = () => {
           paymentMethod: 'Cash',
           notes: '',
         });
+        window.dispatchEvent(new CustomEvent('expense-added', { detail: res.data.expense }));
         fetchExpenses();
       }
     } catch (err) {
@@ -155,6 +156,7 @@ const ExpensesPage = () => {
     }
     try {
       await expenseService.deleteExpense(id);
+      window.dispatchEvent(new CustomEvent('expense-added'));
       fetchExpenses();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete expense');

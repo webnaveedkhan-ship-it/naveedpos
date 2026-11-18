@@ -86,7 +86,7 @@ const tenantSchema = new mongoose.Schema(
       },
       receiptHeader: {
         type: String,
-        default: 'NORMEGA MART',
+        default: 'Al-Madina Super Store',
       },
       receiptFooter: {
         type: String,

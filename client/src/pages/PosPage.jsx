@@ -66,6 +66,10 @@ const PosPage = () => {
   const handleOrderSuccess = (order) => {
     setCompletedOrder(order);
     setIsReceiptOpen(true);
+    window.dispatchEvent(new CustomEvent('sale-completed', { detail: order }));
+    if (order?.paymentMethod === 'KHATA') {
+      window.dispatchEvent(new CustomEvent('khata-updated'));
+    }
     fetchCatalog();
   };
 
@@ -81,6 +85,7 @@ const PosPage = () => {
     }
     setSuccessToast(`"${newProduct.title}" added to catalog & cart!`);
     setTimeout(() => setSuccessToast(null), 4000);
+    window.dispatchEvent(new CustomEvent('inventory-updated', { detail: newProduct }));
     fetchCatalog();
   };
 

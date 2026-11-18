@@ -61,11 +61,11 @@ const LandingDashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B132B] text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200 selection:bg-emerald-500 selection:text-white">
       {/* ------------------------------------------------------------- */}
       {/* 1. TOP GLOBAL NAVIGATION BAR                                 */}
       {/* ------------------------------------------------------------- */}
-      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#0B132B]/80 border-b border-slate-200 dark:border-slate-800/80 transition-colors">
+      <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo & Brand */}
           <Link to="/" className="flex items-center space-x-2.5 group">
@@ -89,17 +89,14 @@ const LandingDashboardPage = () => {
 
           {/* Center Navigation Links (Desktop) */}
           <div className="hidden md:flex items-center space-x-6 text-xs font-bold text-slate-600 dark:text-slate-300">
+            <a href="#about" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
+              About Us
+            </a>
+            <a href="#solutions" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
+              Solutions
+            </a>
             <a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
               Features
-            </a>
-            <a href="#dashboard-preview" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
-              Live Dashboard
-            </a>
-            <a href="#khata" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
-              Khata Ledger
-            </a>
-            <a href="#inventory" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
-              Variants & Stock
             </a>
             <a href="#pricing" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition">
               Pricing Plans
@@ -235,10 +232,61 @@ const LandingDashboardPage = () => {
       </section>
 
       {/* ------------------------------------------------------------- */}
-      {/* 3. LIVE INTERACTIVE DASHBOARD PREVIEW MOCKUP                  */}
+      {/* 2. ABOUT US: BUILT FOR PAKISTANI RETAILERS                   */}
       {/* ------------------------------------------------------------- */}
-      <section id="dashboard-preview" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1C2541]/70 shadow-2xl p-4 sm:p-8 backdrop-blur-xl space-y-6">
+      <section id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 p-6 sm:p-10 shadow-sm space-y-6">
+          <div className="max-w-3xl space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              About NaveedPOS Cloud SaaS
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Engineered Exclusively for Pakistani High-Velocity Retail &amp; Smart Khata
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
+              NaveedPOS is Pakistan&apos;s leading Multi-Tenant Cloud Point of Sale and Digital Khata platform. Designed to eliminate ledger disputes and inventory guesswork, NaveedPOS natively supports bilingual Urdu/English workflows, 80mm thermal receipt printing, JazzCash/EasyPaisa/Raast payments, and 1-tap WhatsApp bill sharing and payment reminders.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-4 border-t border-slate-100 dark:border-slate-700/60">
+            <div className="space-y-1.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                🇵🇰
+              </div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">100% Localized for Pakistan</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Pre-configured with Pakistani rupee (PKR), Urdu terms (نقد, ادھار, وصولی), and local payment rails.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                📱
+              </div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">Smart Khata &amp; WhatsApp</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Track customer receivables, set credit limits, and send polite automated payment reminder slips via WhatsApp.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                ⚡
+              </div>
+              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">Zero Installation Cloud SaaS</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Runs instantly in your web browser, tablet, or mobile phone. Your store data is backed up safely to the cloud.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------------- */}
+      {/* 3. MULTI-INDUSTRY SOLUTIONS & LIVE DEMO SHOWCASE             */}
+      {/* ------------------------------------------------------------- */}
+      <section id="solutions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 shadow-2xl p-4 sm:p-8 backdrop-blur-xl space-y-6">
           {/* Business Module Interactive Switcher Tabs on Landing Showcase */}
           <div className="space-y-2 pb-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
@@ -507,7 +555,7 @@ const LandingDashboardPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* 1. POS Terminal */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ShoppingCart className="w-6 h-6" />
             </div>
@@ -520,7 +568,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 2. Khata & Udhar */}
-          <div id="khata" className="p-6 rounded-2xl bg-white dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div id="khata" className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <BookOpen className="w-6 h-6" />
             </div>
@@ -533,7 +581,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 3. Multi-Industry Inventory */}
-          <div id="inventory" className="p-6 rounded-2xl bg-white dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div id="inventory" className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
               <Package className="w-6 h-6" />
             </div>
@@ -546,7 +594,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 4. Sham Ka Hisaab */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2541]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <DollarSign className="w-6 h-6" />
             </div>
@@ -579,7 +627,7 @@ const LandingDashboardPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
           {/* Card 1: 14-Day Free Trial */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[#1C2541]/60 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between relative overflow-hidden">
+          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/60 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-4 right-4 bg-emerald-500 text-slate-950 font-black text-[10px] uppercase px-2.5 py-1 rounded-full">
               Recommended
             </div>
@@ -634,7 +682,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* Card 2: Standard Plan */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[#1C2541]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
+          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Single Store
@@ -686,7 +734,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* Card 3: Premium / Mart Plan */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[#1C2541]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
+          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                 Multi-Counter Marts
@@ -773,7 +821,7 @@ const LandingDashboardPage = () => {
       {/* ------------------------------------------------------------- */}
       {/* 7. FOOTER                                                     */}
       {/* ------------------------------------------------------------- */}
-      <footer className="border-t border-slate-200 dark:border-slate-800/80 py-8 bg-white dark:bg-[#0B132B]">
+      <footer className="border-t border-slate-200 dark:border-slate-800/80 py-8 bg-white dark:bg-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-800 dark:text-slate-200">NaveedPOS</span>

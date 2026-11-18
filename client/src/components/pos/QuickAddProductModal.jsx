@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import ProductImageUploader from '../common/ProductImageUploader';
 import { productService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { PlusCircle, AlertCircle, Sparkles, Layers, Package } from 'lucide-react';
 
 const INDUSTRY_PRESETS = [
@@ -21,7 +22,8 @@ const generateRandomSku = (prefix = 'ITM') => {
 };
 
 const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
-  const [businessType, setBusinessType] = useState('GENERAL_STORE');
+  const { businessType: authBusinessType } = useAuth();
+  const [businessType, setBusinessType] = useState(authBusinessType || 'GENERAL_STORE');
   const [formData, setFormData] = useState({
     title: '',
     sku: generateRandomSku('GRO'),
@@ -44,15 +46,24 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    if (authBusinessType) {
+      setBusinessType(authBusinessType);
+    }
+  }, [authBusinessType]);
+
+  useEffect(() => {
     if (isOpen) {
       setErrorMsg('');
-      const preset = INDUSTRY_PRESETS.find((p) => p.id === businessType) || INDUSTRY_PRESETS[0];
+      const targetType = authBusinessType || businessType || 'GENERAL_STORE';
+      setBusinessType(targetType);
+      const preset = INDUSTRY_PRESETS.find((p) => p.id === targetType) || INDUSTRY_PRESETS[0];
       setFormData((prev) => ({
         ...prev,
+        category: prev.title ? prev.category : preset.defaultCat,
         sku: prev.sku || generateRandomSku(preset.prefix),
       }));
     }
-  }, [isOpen, businessType]);
+  }, [isOpen, authBusinessType, businessType]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -201,31 +212,17 @@ const QuickAddProductModal = ({ isOpen, onClose, onProductCreated }) => {
           </div>
         )}
 
-        {/* Industry Category Switcher */}
-        <div>
-          <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
-            Select Store Type
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {INDUSTRY_PRESETS.map((p) => {
-              const active = businessType === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => handleSelectIndustry(p.id)}
-                  className={`p-2 rounded-xl border text-xs font-bold transition flex items-center space-x-1.5 ${
-                    active
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-2 ring-emerald-500/30'
-                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                  }`}
-                >
-                  <span>{p.icon}</span>
-                  <span className="truncate">{p.label}</span>
-                </button>
-              );
-            })}
+        {/* Active Industry Format Badge */}
+        <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs">
+          <div className="flex items-center space-x-2">
+            <span className="text-base">{INDUSTRY_PRESETS.find((p) => p.id === businessType)?.icon || '🏬'}</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">
+              {INDUSTRY_PRESETS.find((p) => p.id === businessType)?.label || 'General Store'} Catalog Item
+            </span>
           </div>
+          <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 font-bold">
+            Prefix: {INDUSTRY_PRESETS.find((p) => p.id === businessType)?.prefix || 'ITM'}
+          </span>
         </div>
 
         {/* Product Title */}

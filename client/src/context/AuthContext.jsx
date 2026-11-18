@@ -13,6 +13,20 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
+  const [tenantName, setTenantName] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.tenantName || u.storeName || u.shopName) {
+          return u.tenantName || u.storeName || u.shopName;
+        }
+      }
+      return localStorage.getItem('naveedpos_tenant_name') || 'Al-Madina Super Store';
+    } catch {
+      return 'Al-Madina Super Store';
+    }
+  });
   const [businessType, setBusinessTypeState] = useState(() => {
     try {
       const savedUser = localStorage.getItem('user');
@@ -65,6 +79,14 @@ export const AuthProvider = ({ children }) => {
             };
 
             setUser(nextUser);
+            if (serverUser.tenantName) {
+              setTenantName(serverUser.tenantName);
+              localStorage.setItem('naveedpos_tenant_name', serverUser.tenantName);
+            }
+            if (serverUser.businessType) {
+              setBusinessTypeState(serverUser.businessType);
+              localStorage.setItem('naveedpos_business_type', serverUser.businessType);
+            }
             localStorage.setItem('user', JSON.stringify(nextUser));
           }
         } catch (error) {
@@ -101,6 +123,14 @@ export const AuthProvider = ({ children }) => {
       const receivedUser = normalizeUserData(rawUser);
       setToken(receivedToken);
       setUser(receivedUser);
+      if (receivedUser.tenantName) {
+        setTenantName(receivedUser.tenantName);
+        localStorage.setItem('naveedpos_tenant_name', receivedUser.tenantName);
+      }
+      if (receivedUser.businessType) {
+        setBusinessTypeState(receivedUser.businessType);
+        localStorage.setItem('naveedpos_business_type', receivedUser.businessType);
+      }
       localStorage.setItem('token', receivedToken);
       localStorage.setItem('user', JSON.stringify(receivedUser));
       return receivedUser;
@@ -110,6 +140,14 @@ export const AuthProvider = ({ children }) => {
       const receivedToken = res.data.token || 'demo-token';
       setToken(receivedToken);
       setUser(receivedUser);
+      if (receivedUser.tenantName) {
+        setTenantName(receivedUser.tenantName);
+        localStorage.setItem('naveedpos_tenant_name', receivedUser.tenantName);
+      }
+      if (receivedUser.businessType) {
+        setBusinessTypeState(receivedUser.businessType);
+        localStorage.setItem('naveedpos_business_type', receivedUser.businessType);
+      }
       localStorage.setItem('token', receivedToken);
       localStorage.setItem('user', JSON.stringify(receivedUser));
       return receivedUser;
@@ -124,6 +162,12 @@ export const AuthProvider = ({ children }) => {
       const receivedUser = normalizeUserData(rawUser);
       setToken(receivedToken);
       setUser(receivedUser);
+      const storeName = receivedUser.tenantName || formData.shopName || formData.storeName || 'Al-Madina Super Store';
+      setTenantName(storeName);
+      localStorage.setItem('naveedpos_tenant_name', storeName);
+      const bType = receivedUser.businessType || formData.businessType || 'GENERAL_STORE';
+      setBusinessTypeState(bType);
+      localStorage.setItem('naveedpos_business_type', bType);
       localStorage.setItem('token', receivedToken);
       localStorage.setItem('user', JSON.stringify(receivedUser));
       return receivedUser;
@@ -133,6 +177,12 @@ export const AuthProvider = ({ children }) => {
       const receivedToken = res.data.token || 'demo-token';
       setToken(receivedToken);
       setUser(receivedUser);
+      const storeName = receivedUser.tenantName || formData.shopName || formData.storeName || 'Al-Madina Super Store';
+      setTenantName(storeName);
+      localStorage.setItem('naveedpos_tenant_name', storeName);
+      const bType = receivedUser.businessType || formData.businessType || 'GENERAL_STORE';
+      setBusinessTypeState(bType);
+      localStorage.setItem('naveedpos_business_type', bType);
       localStorage.setItem('token', receivedToken);
       localStorage.setItem('user', JSON.stringify(receivedUser));
       return receivedUser;
@@ -186,6 +236,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('impersonatingFrom');
+      window.location.href = '/login';
     }
   };
 
@@ -244,7 +295,13 @@ export const AuthProvider = ({ children }) => {
         isStoreAdmin,
         isCashier,
         isAdmin: isStoreAdmin, // alias for backwards compatibility
-        tenantName: user?.tenantName || (isSuperAdmin ? 'Super Admin SaaS Console' : 'Retail Store'),
+        tenantName: isSuperAdmin
+          ? 'Super Admin SaaS Console'
+          : (tenantName || user?.tenantName || user?.storeName || 'Al-Madina Super Store'),
+        setTenantName: (name) => {
+          setTenantName(name);
+          localStorage.setItem('naveedpos_tenant_name', name);
+        },
         tenantId: user?.tenantId || null,
         tenantPlan,
         businessType: user?.businessType || businessType || 'GENERAL_STORE',

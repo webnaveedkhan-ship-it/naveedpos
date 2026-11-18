@@ -15,7 +15,7 @@ export const escapeCsvValue = (value) => {
 };
 
 export const exportDetailedSalesReportCsv = ({
-  storeName = 'NORMEGA MART',
+  storeName = 'Al-Madina Super Store',
   period = 'daily',
   periodLabel = 'Today',
   dateRangeStr = '',

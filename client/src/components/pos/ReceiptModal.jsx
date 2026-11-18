@@ -29,7 +29,7 @@ const ReceiptModal = ({ isOpen, onClose, order }) => {
     window.print();
   };
 
-  const storeName = order.tenantName || tenantName || 'NORMEGA MART';
+  const storeName = order.tenantName || tenantName || 'Al-Madina Super Store';
   const rawMethod = order.paymentMethod?.toUpperCase() || 'CASH';
   const isKhata = rawMethod === 'KHATA';
   const paymentModeText =
