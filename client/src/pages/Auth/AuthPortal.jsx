@@ -337,9 +337,9 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
   };
 
   return (
-    <div className="min-h-screen min-h-[100dvh] w-full overflow-y-auto flex flex-col justify-between bg-slate-50 dark:bg-[slate-900] text-slate-900 dark:text-slate-100 transition-colors duration-200 select-none p-3 sm:p-5 lg:p-6 relative">
+    <div className="min-h-screen min-h-[100dvh] w-full overflow-y-auto flex flex-col justify-between bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-200 select-none p-3 sm:p-5 lg:p-6 relative">
       {/* Dynamic Ambient Glow Gradients (Dark Mode) */}
-      <div className="hidden dark:block absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-[slate-800]/40 via-cyan-950/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <div className="hidden dark:block absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-br from-slate-800/40 via-cyan-950/20 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="hidden dark:block absolute bottom-0 right-10 w-[450px] h-[450px] bg-gradient-to-tl from-[#0A1128]/70 via-emerald-950/20 to-transparent rounded-full blur-3xl pointer-events-none" />
 
       {/* ------------------------------------------------------------- */}
@@ -424,7 +424,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2.5 pt-1">
-                  <div className="bg-white/80 dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
+                  <div className="bg-white/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
                     <div className="flex items-center space-x-2 mb-1">
                       <Building2 className="w-3.5 h-3.5 text-indigo-500" />
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -436,7 +436,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     </p>
                   </div>
 
-                  <div className="bg-white/80 dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
+                  <div className="bg-white/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
                     <div className="flex items-center space-x-2 mb-1">
                       <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -448,7 +448,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     </p>
                   </div>
 
-                  <div className="bg-white/80 dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
+                  <div className="bg-white/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
                     <div className="flex items-center space-x-2 mb-1">
                       <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -460,7 +460,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                     </p>
                   </div>
 
-                  <div className="bg-white/80 dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
+                  <div className="bg-white/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm">
                     <div className="flex items-center space-x-2 mb-1">
                       <Activity className="w-3.5 h-3.5 text-amber-500" />
                       <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -534,7 +534,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                   {businessModuleDetails[selectedBusinessModule]?.features.map((feat, idx) => (
                     <div
                       key={idx}
-                      className="bg-white/80 dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm"
+                      className="bg-white/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 backdrop-blur-sm"
                     >
                       <div className="flex items-center space-x-2 mb-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
@@ -554,7 +554,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
 
           {/* Right Column: Clean Compact Card (No Overflow) */}
           <div className="lg:col-span-6 w-full max-w-md mx-auto">
-            <div className="bg-white/95 dark:bg-[slate-800]/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
+            <div className="bg-white/95 dark:bg-slate-800/85 backdrop-blur-xl border border-slate-200 dark:border-slate-700/60 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 p-5 sm:p-6 transition-all duration-200">
               {/* ------------------------------------------------------------- */}
               {/* TOP SEGMENTED SWITCHER: [ Sign In ] | [ 14-Day Free Trial ]   */}
               {/* Super Admin option is ONLY displayed on private admin route   */}
@@ -562,7 +562,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
               <div
                 className={`grid ${
                   isSuperAdminPath ? 'grid-cols-3' : 'grid-cols-2'
-                } p-1 bg-slate-100 dark:bg-[slate-900]/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-3.5 transition-all duration-300 gap-1`}
+                } p-1 bg-slate-100 dark:bg-slate-900/90 rounded-2xl border border-slate-200 dark:border-slate-700/80 mb-3.5 transition-all duration-300 gap-1`}
               >
                 {/* 1. SIGN IN TAB - Default for returning Store Owners, Cashiers, and Super Admin */}
                 <button
@@ -693,7 +693,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="naveed@naveedpos.com"
                         required
                         autoComplete="username"
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -714,7 +714,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="••••••••"
                         required
                         autoComplete="current-password"
-                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-1 focus:ring-indigo-500 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                       <button
                         type="button"
@@ -776,7 +776,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="owner@myshop.com or 03XX-XXXXXXX"
                         required
                         autoComplete="username"
-                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                     </div>
                   </div>
@@ -806,7 +806,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="••••••••"
                         required
                         autoComplete="current-password"
-                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-base sm:text-sm font-medium outline-none transition min-h-[44px]"
                       />
                       <button
                         type="button"
@@ -826,7 +826,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         type="checkbox"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-emerald-500 bg-slate-100 dark:bg-[slate-900] border-slate-300 dark:border-slate-700"
+                        className="w-3.5 h-3.5 rounded text-emerald-500 bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-700"
                       />
                       <span>Remember this session</span>
                     </label>
@@ -967,9 +967,9 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                           type="text"
                           value={shopName}
                           onChange={(e) => setShopName(e.target.value)}
-                          placeholder="e.g. Shaheen Store"
+                          placeholder="e.g. Al-Madina Super Store"
                           required
-                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                         />
                       </div>
                     </div>
@@ -989,7 +989,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                           onChange={(e) => setOwnerName(e.target.value)}
                           placeholder="e.g. Muhammad Naveed"
                           required
-                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                         />
                       </div>
                     </div>
@@ -1012,7 +1012,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                           onChange={(e) => setSignUpPhone(formatPakistaniPhone(e.target.value))}
                           placeholder="0300-1234567"
                           required
-                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                         />
                       </div>
                     </div>
@@ -1032,7 +1032,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                           onChange={(e) => setSignUpEmail(e.target.value)}
                           placeholder="owner@myshop.com"
                           required
-                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                          className="w-full pl-8 pr-2.5 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                         />
                       </div>
                     </div>
@@ -1054,7 +1054,7 @@ const AuthPortal = ({ defaultTab = 'login', isPrivateAdminRoute = false }) => {
                         placeholder="Minimum 6 characters"
                         required
                         autoComplete="new-password"
-                        className="w-full pl-8 pr-10 py-2 bg-slate-50 dark:bg-[slate-900]/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
+                        className="w-full pl-8 pr-10 py-2 bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-emerald-500 dark:focus:ring-cyan-400 rounded-xl text-xs sm:text-sm font-medium outline-none transition min-h-[40px]"
                       />
                       <button
                         type="button"

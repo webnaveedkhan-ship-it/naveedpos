@@ -49,8 +49,10 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
     clearCart,
   } = useCart();
 
-  // Payment Method: 'CASH' | 'JAZZCASH_EASYPAISA' | 'BANK' | 'KHATA' | 'SPLIT'
+  // Payment Method: 'CASH' | 'CARD_DIGITAL' | 'KHATA' | 'SPLIT'
   const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [digitalSubMode, setDigitalSubMode] = useState('CARD'); // 'CARD' | 'WALLET' | 'BANK'
+  const [cardTxRef, setCardTxRef] = useState('');
 
   // CASH Details
   const [cashTendered, setCashTendered] = useState('');
@@ -110,6 +112,8 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
   useEffect(() => {
     if (isOpen) {
       setPaymentMethod('CASH');
+      setDigitalSubMode('CARD');
+      setCardTxRef('');
       setCashTendered(grandTotal.toString());
       setSplitCash((grandTotal / 2).toFixed(0));
       setWalletTxRef('');
@@ -227,6 +231,13 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
     setIsProcessing(true);
 
     try {
+      let effectiveMethod = paymentMethod.toUpperCase();
+      if (effectiveMethod === 'CARD_DIGITAL') {
+        if (digitalSubMode === 'WALLET') effectiveMethod = 'JAZZCASH_EASYPAISA';
+        else if (digitalSubMode === 'BANK') effectiveMethod = 'BANK';
+        else effectiveMethod = 'CARD';
+      }
+
       const orderPayload = {
         items: cartItems.map((item) => ({
           product: item.product,
@@ -244,7 +255,7 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
         discountValue,
         discountAmount,
         grandTotal,
-        paymentMethod: paymentMethod.toUpperCase(),
+        paymentMethod: effectiveMethod,
         paymentDetails: {
           cashTendered:
             paymentMethod === 'CASH'
@@ -254,14 +265,17 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
               : 0,
           changeGiven: paymentMethod === 'CASH' ? Number(changeDue.toFixed(2)) : 0,
           cashAmount: paymentMethod === 'SPLIT' ? splitCashNum : paymentMethod === 'CASH' ? grandTotal : 0,
-          walletType: paymentMethod === 'JAZZCASH_EASYPAISA' ? walletType : '',
+          cardType: effectiveMethod === 'CARD' ? 'VISA / MASTERCARD / POS' : '',
+          walletType: effectiveMethod === 'JAZZCASH_EASYPAISA' ? walletType : '',
           transactionRef:
-            paymentMethod === 'JAZZCASH_EASYPAISA'
+            effectiveMethod === 'JAZZCASH_EASYPAISA'
               ? walletTxRef
-              : paymentMethod === 'BANK'
+              : effectiveMethod === 'BANK'
               ? bankTxRef
+              : effectiveMethod === 'CARD'
+              ? (cardTxRef || 'POS-TERMINAL')
               : '',
-          bankName: paymentMethod === 'BANK' ? bankName : '',
+          bankName: effectiveMethod === 'BANK' ? bankName : '',
           khataAmount: paymentMethod === 'KHATA' ? grandTotal : 0,
           previousDebt: paymentMethod === 'KHATA' ? khataCurrentDebt : 0,
           balanceAfter: paymentMethod === 'KHATA' ? khataProjectedDebt : 0,
@@ -338,7 +352,7 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
           <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
             Select Payment Method (ادائیگی کا طریقہ)
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {/* 1. Cash (نقد) */}
             <button
               type="button"
@@ -346,7 +360,7 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
                 setPaymentMethod('CASH');
                 setErrorMsg('');
               }}
-              className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 font-bold text-xs transition active:scale-95 ${
+              className={`p-3 rounded-2xl border flex flex-col items-center justify-center space-y-1 font-black text-xs transition active:scale-95 ${
                 paymentMethod === 'CASH'
                   ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 ring-2 ring-emerald-500/30 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -356,50 +370,32 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
               <span>Cash (نقد)</span>
             </button>
 
-            {/* 2. JazzCash / EasyPaisa (موبائل والٹ) */}
+            {/* 2. Card / Digital Payment (کارڈ / ڈیجیٹل) */}
             <button
               type="button"
               onClick={() => {
-                setPaymentMethod('JAZZCASH_EASYPAISA');
+                setPaymentMethod('CARD_DIGITAL');
                 setErrorMsg('');
               }}
-              className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 font-bold text-xs transition active:scale-95 ${
-                paymentMethod === 'JAZZCASH_EASYPAISA'
+              className={`p-3 rounded-2xl border flex flex-col items-center justify-center space-y-1 font-black text-xs transition active:scale-95 ${
+                paymentMethod === 'CARD_DIGITAL' || paymentMethod === 'JAZZCASH_EASYPAISA' || paymentMethod === 'BANK'
                   ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300 ring-2 ring-indigo-500/30 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
             >
-              <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <span>JazzCash / EasyPaisa</span>
-              <span className="text-[10px] text-slate-400 font-normal">موبائل والٹ</span>
+              <CreditCard className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <span>Card / Digital</span>
+              <span className="text-[10px] text-slate-400 font-normal">کارڈ / ڈیجیٹل</span>
             </button>
 
-            {/* 3. Bank Transfer (بینک ٹرانسفر) */}
-            <button
-              type="button"
-              onClick={() => {
-                setPaymentMethod('BANK');
-                setErrorMsg('');
-              }}
-              className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 font-bold text-xs transition active:scale-95 ${
-                paymentMethod === 'BANK'
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 ring-2 ring-blue-500/30 shadow-xs'
-                  : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <span>Bank Transfer</span>
-              <span className="text-[10px] text-slate-400 font-normal">بینک ٹرانسفر</span>
-            </button>
-
-            {/* 4. Khata / Udhar (کھاتا - ادھار) */}
+            {/* 3. Khata / Udhar (کھاتا - ادھار) */}
             <button
               type="button"
               onClick={() => {
                 setPaymentMethod('KHATA');
                 setErrorMsg('');
               }}
-              className={`p-2.5 rounded-xl border flex flex-col items-center justify-center space-y-1 font-bold text-xs transition active:scale-95 ${
+              className={`p-3 rounded-2xl border flex flex-col items-center justify-center space-y-1 font-black text-xs transition active:scale-95 ${
                 paymentMethod === 'KHATA'
                   ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 ring-2 ring-amber-500/30 shadow-xs'
                   : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -476,109 +472,165 @@ const PaymentModal = ({ isOpen, onClose, onOrderCompleted }) => {
         )}
 
         {/* ========================================================= */}
-        {/* PAYMENT DETAILS: JAZZCASH / EASYPAISA                     */}
+        {/* PAYMENT DETAILS: CARD / DIGITAL PAYMENT (SUBMODES)        */}
         {/* ========================================================= */}
-        {paymentMethod === 'JAZZCASH_EASYPAISA' && (
+        {(paymentMethod === 'CARD_DIGITAL' || paymentMethod === 'JAZZCASH_EASYPAISA' || paymentMethod === 'BANK') && (
           <div className="bg-indigo-50/60 dark:bg-indigo-950/30 p-4 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 space-y-3">
-            <div className="flex items-center space-x-2 text-xs font-bold text-indigo-900 dark:text-indigo-300">
-              <Smartphone className="w-4 h-4 text-indigo-600" />
-              <span>Mobile Wallet Payment (JazzCash / EasyPaisa / Raast)</span>
-            </div>
-
-            {/* Wallet Provider Switcher */}
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Select Wallet Type
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {['JazzCash', 'EasyPaisa', 'Raast'].map((w) => (
-                  <button
-                    key={w}
-                    type="button"
-                    onClick={() => setWalletType(w)}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold border transition ${
-                      walletType === w
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                        : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    {w}
-                  </button>
-                ))}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-xs font-bold text-indigo-900 dark:text-indigo-300">
+                <CreditCard className="w-4 h-4 text-indigo-600" />
+                <span>Card &amp; Digital Channels (کارڈ اور ڈیجیٹل ادائیگی)</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Transaction ID / TID (ٹرانزیکشن آئی ڈی)
-                </label>
-                <input
-                  type="text"
-                  value={walletTxRef}
-                  onChange={(e) => setWalletTxRef(e.target.value)}
-                  placeholder="e.g. TID 0498172948"
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono outline-none text-slate-900 dark:text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Sender Mobile # (بھیجنے والے کا نمبر)
-                </label>
-                <input
-                  type="text"
-                  value={walletSenderPhone}
-                  onChange={(e) => setWalletSenderPhone(e.target.value)}
-                  placeholder="0300-1234567"
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-white"
-                />
-              </div>
+            {/* Sub-Channel Switcher */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setDigitalSubMode('CARD')}
+                className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center space-x-1 ${
+                  digitalSubMode === 'CARD'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>POS Card</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDigitalSubMode('WALLET')}
+                className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center space-x-1 ${
+                  digitalSubMode === 'WALLET'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Mobile Wallet</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDigitalSubMode('BANK')}
+                className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition flex items-center justify-center space-x-1 ${
+                  digitalSubMode === 'BANK'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Bank / Raast</span>
+              </button>
             </div>
-          </div>
-        )}
 
-        {/* ========================================================= */}
-        {/* PAYMENT DETAILS: BANK TRANSFER                           */}
-        {/* ========================================================= */}
-        {paymentMethod === 'BANK' && (
-          <div className="bg-blue-50/60 dark:bg-blue-950/30 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/50 space-y-3">
-            <div className="flex items-center space-x-2 text-xs font-bold text-blue-900 dark:text-blue-300">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span>Bank Transfer / IBFT Details (بینک ٹرانسفر)</span>
-            </div>
+            {/* Sub-Channel 1: Card / POS Terminal */}
+            {digitalSubMode === 'CARD' && (
+              <div className="space-y-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 dark:border-indigo-950">
+                <div className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 font-medium">
+                  <span>Swipe / Tap Customer Card on POS Machine</span>
+                  <span className="text-emerald-600 font-bold">Terminal Active</span>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                    Card Slip Reference / Auth Code (اختیاری)
+                  </label>
+                  <input
+                    type="text"
+                    value={cardTxRef}
+                    onChange={(e) => setCardTxRef(e.target.value)}
+                    placeholder="e.g. AUTH-849182"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono outline-none text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  Receiving Bank
-                </label>
-                <select
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-white"
-                >
-                  {PAKISTANI_BANKS.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
+            {/* Sub-Channel 2: JazzCash / EasyPaisa / Raast */}
+            {digitalSubMode === 'WALLET' && (
+              <div className="space-y-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 dark:border-indigo-950">
+                <div className="grid grid-cols-3 gap-2">
+                  {['JazzCash', 'EasyPaisa', 'Raast'].map((w) => (
+                    <button
+                      key={w}
+                      type="button"
+                      onClick={() => setWalletType(w)}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition ${
+                        walletType === w
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {w}
+                    </button>
                   ))}
-                </select>
-              </div>
+                </div>
 
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  IBFT Reference / Cheque #
-                </label>
-                <input
-                  type="text"
-                  value={bankTxRef}
-                  onChange={(e) => setBankTxRef(e.target.value)}
-                  placeholder="e.g. IBFT-9182374"
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono outline-none text-slate-900 dark:text-white"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Transaction ID / TID (ٹرانزیکشن آئی ڈی)
+                    </label>
+                    <input
+                      type="text"
+                      value={walletTxRef}
+                      onChange={(e) => setWalletTxRef(e.target.value)}
+                      placeholder="e.g. TID 0498172948"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono outline-none text-slate-900 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Sender Mobile # (بھیجنے والے کا نمبر)
+                    </label>
+                    <input
+                      type="text"
+                      value={walletSenderPhone}
+                      onChange={(e) => setWalletSenderPhone(e.target.value)}
+                      placeholder="0300-1234567"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Sub-Channel 3: Bank Transfer / IBFT */}
+            {digitalSubMode === 'BANK' && (
+              <div className="space-y-2 bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-100 dark:border-indigo-950">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      Receiving Bank
+                    </label>
+                    <select
+                      value={bankName}
+                      onChange={(e) => setBankName(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-white"
+                    >
+                      {PAKISTANI_BANKS.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                      IBFT Reference / Cheque #
+                    </label>
+                    <input
+                      type="text"
+                      value={bankTxRef}
+                      onChange={(e) => setBankTxRef(e.target.value)}
+                      placeholder="e.g. IBFT-9182374"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono outline-none text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

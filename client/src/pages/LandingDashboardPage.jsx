@@ -34,6 +34,74 @@ const LandingDashboardPage = () => {
   const { login, isAuthenticated, isSuperAdmin, isImpersonating } = useAuth();
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [activeDemoModule, setActiveDemoModule] = useState('FOOTWEAR');
+  const [pricingModule, setPricingModule] = useState('FOOTWEAR');
+
+  const INDUSTRY_PLANS = {
+    FOOTWEAR: {
+      id: 'FOOTWEAR',
+      title: 'Footwear & Shoes',
+      urdu: 'جوتے اور چپل اسٹور',
+      price: 'Rs. 3,500',
+      period: '/ month',
+      desc: 'Optimized for shoe stores, footwear retail chains, and Peshawari chappal makers.',
+      features: [
+        'Single / Multi-Counter Footwear POS',
+        'Size-Run Matrix (Sizes 6 through 11)',
+        'Broken Size Run & Restock Alerts',
+        'Customer Khata Ledger with WhatsApp Reminder',
+        'Thermal Pair & Box Barcode Label Printing',
+        'Size Exchange & Defective Return Tracking',
+      ],
+    },
+    GARMENTS: {
+      id: 'GARMENTS',
+      title: 'Garments & Boutique',
+      urdu: 'کپڑے اور ملبوسات بوتیک',
+      price: 'Rs. 3,500',
+      period: '/ month',
+      desc: 'Engineered for apparel shops, fashion boutiques, and cloth merchants.',
+      features: [
+        'High-Speed Counter Billing & Discounts',
+        'Size & Color Matrix (S, M, L, XL, XXL)',
+        'Customer Alteration & Tailoring Tracking',
+        'Seasonal Lawn Collection & Dead Stock Insights',
+        'WhatsApp Invoices & Udhar Payment Slips',
+        'Daily Cashier Sales Reconciliation',
+      ],
+    },
+    GENERAL_STORE: {
+      id: 'GENERAL_STORE',
+      title: 'Super Mart & Kiryana',
+      urdu: 'کریانہ اور سپر مارٹ',
+      price: 'Rs. 4,500',
+      period: '/ month',
+      desc: 'Built for high-volume grocery marts, Kiryana general stores, and cash & carry.',
+      features: [
+        'Laser Barcode Scanner Instant Checkout',
+        'Loose-Item KG & Fractional Gram Billing',
+        'Multi-Cashier Counters with Role Permissions',
+        'Daily Drawer Cash Hisaab (Pakistani Banknotes)',
+        'Urdu 80mm Thermal Receipt Printing',
+        'Smart Customer Khata with Debt Limits',
+      ],
+    },
+    PERFUME: {
+      id: 'PERFUME',
+      title: 'Perfumery & Attar',
+      urdu: 'عطر اور پرفیوم ہاؤس',
+      price: 'Rs. 3,500',
+      period: '/ month',
+      desc: 'Designed for fragrance boutiques, attar houses, and perfume oil blenders.',
+      features: [
+        'Bottles, Tester Vials & Spray Billing',
+        'Fractional Milliliter (ML) & Tola Measuring',
+        'Tester Bottle Depletion Audit',
+        'Custom Oil-to-Alcohol Blend Formulations',
+        'WhatsApp Digital Receipt & Khata',
+        'Top Fragrance Family Revenue Reports',
+      ],
+    },
+  };
 
   // If already logged in, quick redirect button
   const handleGoToApp = () => {
@@ -555,7 +623,7 @@ const LandingDashboardPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* 1. POS Terminal */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <ShoppingCart className="w-6 h-6" />
             </div>
@@ -568,7 +636,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 2. Khata & Udhar */}
-          <div id="khata" className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div id="khata" className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
               <BookOpen className="w-6 h-6" />
             </div>
@@ -581,7 +649,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 3. Multi-Industry Inventory */}
-          <div id="inventory" className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div id="inventory" className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
               <Package className="w-6 h-6" />
             </div>
@@ -594,7 +662,7 @@ const LandingDashboardPage = () => {
           </div>
 
           {/* 4. Sham Ka Hisaab */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-[slate-800]/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm hover:shadow-md transition-all space-y-3">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
               <DollarSign className="w-6 h-6" />
             </div>
@@ -625,9 +693,41 @@ const LandingDashboardPage = () => {
           </p>
         </div>
 
+        {/* Industry Plan Switcher Tabs */}
+        <div className="flex flex-col items-center space-y-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+            Select Your Industry for Customized Modules &amp; Pricing:
+          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+            {[
+              { id: 'FOOTWEAR', label: 'Shoes / Footwear', icon: '👟' },
+              { id: 'GARMENTS', label: 'Garments & Boutique', icon: '👕' },
+              { id: 'GENERAL_STORE', label: 'Supermart & Kiryana', icon: '🛒' },
+              { id: 'PERFUME', label: 'Perfumery & Attar', icon: '🧴' },
+            ].map((p) => {
+              const active = pricingModule === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPricingModule(p.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+                    active
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>{p.icon}</span>
+                  <span>{p.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
           {/* Card 1: 14-Day Free Trial */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/60 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between relative overflow-hidden">
+          <div className="p-8 rounded-3xl bg-white dark:bg-slate-800/60 border-2 border-emerald-500/40 shadow-xl flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-4 right-4 bg-emerald-500 text-slate-950 font-black text-[10px] uppercase px-2.5 py-1 rounded-full">
               Recommended
             </div>
@@ -681,60 +781,54 @@ const LandingDashboardPage = () => {
             </div>
           </div>
 
-          {/* Card 2: Standard Plan */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
-            <div className="space-y-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Single Store
-              </span>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                Standard Retail
-              </h3>
-              <div className="flex items-baseline gap-1 text-slate-900 dark:text-white">
-                <span className="text-4xl font-black">Rs. 3,000</span>
-                <span className="text-xs text-slate-500">/ month</span>
-              </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                Ideal for standalone retail shops, shoe stores, and garment outlets.
-              </p>
+          {/* Card 2: Specialized Industry Plan */}
+          {(() => {
+            const plan = INDUSTRY_PLANS[pricingModule] || INDUSTRY_PLANS.FOOTWEAR;
+            return (
+              <div className="p-8 rounded-3xl bg-white dark:bg-slate-800/60 border-2 border-indigo-500/40 shadow-xl flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-4 right-4 bg-indigo-500 text-white font-black text-[10px] uppercase px-2.5 py-1 rounded-full">
+                  Industry Tailored
+                </div>
+                <div className="space-y-4">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                    {plan.urdu}
+                  </span>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                    {plan.title}
+                  </h3>
+                  <div className="flex items-baseline gap-1 text-slate-900 dark:text-white">
+                    <span className="text-4xl font-black">{plan.price}</span>
+                    <span className="text-xs text-slate-500">{plan.period}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
+                    {plan.desc}
+                  </p>
 
-              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5 text-xs font-medium text-slate-700 dark:text-slate-300">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>1 Store Account &amp; Counter</span>
+                  <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    {plan.features.map((feat, fIdx) => (
+                      <div key={fIdx} className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Unlimited Products &amp; Invoices</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Automated WhatsApp Bill Links</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Barcode Label Generator &amp; Print</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                  <span>Daily Sales &amp; Net Profit Analytics</span>
+
+                <div className="pt-6">
+                  <Link
+                    to="/free-trial"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5 active:scale-95"
+                  >
+                    <span>Choose {plan.title}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
                 </div>
               </div>
-            </div>
-
-            <div className="pt-6">
-              <Link
-                to="/free-trial"
-                className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold text-xs rounded-xl hover:opacity-90 transition-all flex items-center justify-center space-x-1.5 active:scale-95"
-              >
-                <span>Choose Standard Plan</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Card 3: Premium / Mart Plan */}
-          <div className="p-8 rounded-3xl bg-white dark:bg-[slate-800]/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
+          <div className="p-8 rounded-3xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-md flex flex-col justify-between">
             <div className="space-y-4">
               <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
                 Multi-Counter Marts

@@ -305,7 +305,7 @@ const StoreLayout = () => {
             </div>
             <div>
               <span className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white leading-tight block truncate max-w-[140px] sm:max-w-[220px]">
-                {tenantName || 'NaveedPOS'}
+                {tenantName || user?.tenantName || 'Al-Madina Super Store'}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium leading-none truncate">
                 {currentModuleLabel}
@@ -556,7 +556,7 @@ const StoreLayout = () => {
               </div>
               <div>
                 <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white leading-tight block truncate max-w-[160px]">
-                  {tenantName || 'NaveedPOS'}
+                  {tenantName || user?.tenantName || 'Al-Madina Super Store'}
                 </span>
                 <span className="text-[10px] text-slate-400 block font-medium">
                   {user?.role === 'CASHIER' ? 'Cashier Terminal' : 'Retail Management'}

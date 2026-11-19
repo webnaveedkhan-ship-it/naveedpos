@@ -24,7 +24,7 @@ const sendTokenResponse = async (user, statusCode, res, extra = {}) => {
   if (user.tenantId) {
     if (global.useMemoryStore) {
       const t = memoryStore.tenants.find((item) => item._id === user.tenantId);
-      tenantName = t ? t.name : 'Retail Store';
+      tenantName = t ? t.name : 'Al-Madina Super Store';
       tenantData = t
         ? {
             name: t.name,
@@ -37,7 +37,7 @@ const sendTokenResponse = async (user, statusCode, res, extra = {}) => {
         : null;
     } else {
       const t = await Tenant.findById(user.tenantId);
-      tenantName = t ? t.name : 'Retail Store';
+      tenantName = t ? t.name : 'Al-Madina Super Store';
       tenantData = t
         ? {
             name: t.name,
